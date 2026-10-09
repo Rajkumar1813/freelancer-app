@@ -2,200 +2,319 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof title !== 'undefined' ? title : 'Select Account Type - FreelanceHub' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title><%= typeof title !== 'undefined' ? title : 'Choose Your Account Type - FreelanceHub' %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      min-height: 100vh;
-      background: var(--bg-body, #0a0a14);
-      color: var(--text-primary, #fff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      position: relative;
+    /* Reset & Viewport Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      min-height: 100%;
+      width: 100%;
+      background: #090914 !important;
+      color: #ffffff !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       overflow-x: hidden;
     }
-    .bg-grid {
-      position: fixed; inset: 0;
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px 20px;
+      position: relative;
+    }
+
+    /* Ambient Background Elements */
+    .role-bg-grid {
+      position: fixed;
+      inset: 0;
       background-image:
-        linear-gradient(rgba(108, 99, 255, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(108, 99, 255, 0.06) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none; z-index: 0;
+        linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 0;
     }
-    .ambient-glow {
-      position: fixed; width: 600px; height: 600px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(108, 99, 255, 0.14) 0%, transparent 70%);
-      top: -200px; right: -150px; pointer-events: none; z-index: 0;
+    .role-ambient-glow-1 {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, transparent 70%);
+      top: -120px;
+      right: -80px;
+      pointer-events: none;
+      z-index: 0;
     }
-    .ambient-glow-bl {
-      position: fixed; width: 500px; height: 500px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(0, 210, 255, 0.10) 0%, transparent 70%);
-      bottom: -150px; left: -100px; pointer-events: none; z-index: 0;
+    .role-ambient-glow-2 {
+      position: fixed;
+      width: 480px;
+      height: 480px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+      bottom: -100px;
+      left: -80px;
+      pointer-events: none;
+      z-index: 0;
     }
-    .container {
-      position: relative; z-index: 1;
-      width: 100%; max-width: 820px;
+
+    /* Outer Container */
+    .role-selection-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 860px;
       margin: 0 auto;
     }
-    .header-box {
+
+    /* Brand & User Header */
+    .role-header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 30px;
     }
-    .user-greeting {
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+      text-decoration: none;
+      margin-bottom: 16px;
+    }
+    .brand-pill .brand-bolt {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+    .user-pill {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 16px 6px 8px;
-      background: rgba(108, 99, 255, 0.12);
-      border: 1px solid rgba(108, 99, 255, 0.25);
+      padding: 6px 14px 6px 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 50px;
-      font-size: 0.88rem;
-      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     }
-    .user-greeting img {
-      width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+    .user-pill img {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
     }
-    .header-box h1 {
-      font-size: 2.1rem;
+    .user-pill .switch-link {
+      color: #818cf8;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-left: 6px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .user-pill .switch-link:hover {
+      color: #c7d2fe;
+    }
+
+    .role-title-main {
+      font-size: 2.2rem;
       font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #ffffff 40%, rgba(255,255,255,0.7) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.6px;
+      line-height: 1.25;
+      margin-bottom: 10px;
+      color: #ffffff !important;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     }
-    .header-box p {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 1rem;
-      max-width: 520px;
+    .role-subtitle {
+      color: #94a3b8 !important;
+      font-size: 1.02rem;
+      max-width: 540px;
       margin: 0 auto;
+      line-height: 1.5;
     }
 
     /* Cards Grid */
-    .roles-grid {
+    .role-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 22px;
       margin-bottom: 28px;
+      width: 100%;
     }
+
     .role-card {
       position: relative;
       background: rgba(255, 255, 255, 0.04);
-      border: 2px solid rgba(255, 255, 255, 0.09);
+      border: 2px solid rgba(255, 255, 255, 0.1);
       border-radius: 20px;
-      padding: 32px 26px;
+      padding: 30px 24px;
       cursor: pointer;
-      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       user-select: none;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
     }
     .role-card:hover {
       transform: translateY(-4px);
-      border-color: rgba(108, 99, 255, 0.4);
+      border-color: rgba(99, 102, 241, 0.45);
       background: rgba(255, 255, 255, 0.06);
-      box-shadow: 0 16px 40px rgba(108, 99, 255, 0.15);
+      box-shadow: 0 18px 40px rgba(99, 102, 241, 0.18);
     }
     .role-card.selected {
-      border-color: #6c63ff;
-      background: rgba(108, 99, 255, 0.09);
-      box-shadow: 0 0 0 1px #6c63ff, 0 20px 45px rgba(108, 99, 255, 0.25);
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.12);
+      box-shadow: 0 0 0 1px #6366f1, 0 20px 48px rgba(99, 102, 241, 0.28);
     }
-    .role-radio {
-      position: absolute;
-      top: 22px; right: 22px;
-      width: 22px; height: 22px;
+
+    /* Top Row in Card */
+    .card-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+    .role-icon-box {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    .icon-freelancer {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: #ffffff;
+    }
+    .icon-client {
+      background: linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
+      color: #ffffff;
+    }
+
+    .role-radio-badge {
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.25);
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.05);
     }
-    .role-card.selected .role-radio {
-      border-color: #6c63ff;
-      background: #6c63ff;
+    .role-card.selected .role-radio-badge {
+      border-color: #6366f1;
+      background: #6366f1;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
     }
-    .role-radio i {
-      color: #fff;
-      font-size: 0.72rem;
+    .role-radio-badge i {
+      color: #ffffff;
+      font-size: 0.76rem;
       opacity: 0;
-      transform: scale(0.5);
-      transition: all 0.2s;
+      transform: scale(0.4);
+      transition: all 0.2s ease;
     }
-    .role-card.selected .role-radio i {
+    .role-card.selected .role-radio-badge i {
       opacity: 1;
       transform: scale(1);
     }
-    .role-icon-wrap {
-      width: 62px; height: 62px;
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.7rem;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-    .icon-client {
-      background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-      color: #fff;
-    }
-    .icon-freelancer {
-      background: linear-gradient(135deg, #6c63ff 0%, #a855f7 100%);
-      color: #fff;
-    }
-    .role-title {
-      font-size: 1.35rem;
+
+    /* Card Details */
+    .role-badge-tag {
+      display: inline-block;
+      font-size: 0.72rem;
       font-weight: 700;
-      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 3px 9px;
+      border-radius: 20px;
       margin-bottom: 8px;
+      width: fit-content;
     }
-    .role-desc {
-      color: rgba(255, 255, 255, 0.6);
+    .tag-freelancer {
+      background: rgba(168, 85, 247, 0.18);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+    .tag-client {
+      background: rgba(6, 182, 212, 0.18);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #ffffff !important;
+      margin-bottom: 6px;
+    }
+    .card-description {
       font-size: 0.9rem;
       line-height: 1.5;
+      color: #cbd5e1 !important;
       margin-bottom: 20px;
     }
-    .role-features {
+
+    .role-points-list {
       list-style: none;
-      margin-top: auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .role-features li {
-      font-size: 0.84rem;
-      color: rgba(255, 255, 255, 0.75);
+    .role-points-list li {
+      font-size: 0.85rem;
+      color: #e2e8f0 !important;
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
+      line-height: 1.4;
     }
-    .role-features li i {
+    .role-points-list li i {
       color: #10b981;
-      font-size: 0.85rem;
+      font-size: 0.88rem;
+      flex-shrink: 0;
     }
 
-    /* Action bar */
-    .submit-wrap {
+    /* Submit Section */
+    .role-action-section {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 14px;
+      margin-top: 8px;
     }
-    .continue-btn {
+    .role-submit-btn {
       width: 100%;
-      max-width: 420px;
-      padding: 15px 32px;
-      border-radius: 12px;
+      max-width: 440px;
+      padding: 16px 28px;
+      border-radius: 14px;
       border: none;
-      background: linear-gradient(135deg, #6c63ff 0%, #764ba2 100%);
-      color: #fff;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: #ffffff !important;
       font-size: 1.05rem;
       font-weight: 700;
       letter-spacing: 0.2px;
@@ -204,87 +323,206 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      box-shadow: 0 10px 28px rgba(108, 99, 255, 0.4);
-      transition: all 0.25s;
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.45);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .continue-btn:hover {
+    .role-submit-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 14px 34px rgba(108, 99, 255, 0.55);
+      box-shadow: 0 14px 38px rgba(99, 102, 241, 0.6);
+      background: linear-gradient(135deg, #5558e6 0%, #7c3aed 100%);
     }
-    .continue-btn:active {
+    .role-submit-btn:active {
       transform: translateY(0);
     }
-    .disclaimer {
-      font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.4);
+    .role-submit-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .role-security-note {
+      font-size: 0.82rem;
+      color: #64748b !important;
       text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .role-security-note i {
+      color: #10b981;
+    }
+
+    /* Flash Message Box */
+    .role-alert-box {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      padding: 12px 18px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Responsive Breakdown */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 14px;
+        justify-content: flex-start;
+      }
+      .role-title-main {
+        font-size: 1.7rem;
+      }
+      .role-subtitle {
+        font-size: 0.92rem;
+      }
+      .role-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+      .role-card {
+        padding: 22px 18px;
+        border-radius: 16px;
+      }
+      .card-title {
+        font-size: 1.25rem;
+      }
+      .role-icon-box {
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+      }
+      .role-submit-btn {
+        width: 100%;
+        max-width: 100%;
+        padding: 15px 20px;
+        font-size: 1rem;
+      }
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 16px 10px;
+      }
+      .role-title-main {
+        font-size: 1.45rem;
+      }
+      .role-card {
+        padding: 18px 14px;
+      }
+      .role-points-list li {
+        font-size: 0.8rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="ambient-glow"></div>
-  <div class="ambient-glow-bl"></div>
+  <div class="role-bg-grid"></div>
+  <div class="role-ambient-glow-1"></div>
+  <div class="role-ambient-glow-2"></div>
 
-  <%- include('../partials/flash') %>
+  <div class="role-selection-wrapper">
 
-  <div class="container">
-    <div class="header-box">
-      <% if (user) { %>
-        <div class="user-greeting">
-          <img src="<%= user.googleAvatar || '/avatar/' + user._id %>" onerror="this.src='/images/default-avatar.png'" alt="">
-          <span>Signed in as <strong><%= user.name %></strong> (<%= user.email %>)</span>
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+      <div class="role-alert-box">
+        <i class="fas fa-exclamation-circle"></i>
+        <span><%= error[0] %></span>
+      </div>
+    <% } %>
+
+    <!-- Header Section -->
+    <header class="role-header">
+      <a href="/" class="brand-pill">
+        <span class="brand-bolt">⚡</span>
+        <span>FreelanceHub</span>
+      </a>
+
+      <% 
+        const authUser = (typeof user !== 'undefined' && user) || (typeof currentUser !== 'undefined' && currentUser);
+      %>
+      <% if (authUser) { %>
+        <div>
+          <div class="user-pill">
+            <img src="<%= authUser.googleAvatar || '/avatar/' + authUser._id %>" onerror="this.src='/images/default-avatar.png'" alt="User Avatar">
+            <span>Signed in as <strong><%= authUser.name %></strong></span>
+            <a href="/auth/logout" class="switch-link" title="Logout and choose another account">Not you?</a>
+          </div>
         </div>
       <% } %>
-      <h1>Join FreelanceHub as a Client or Freelancer</h1>
-      <p>Choose your primary role. This customizes your dashboard and features.</p>
-    </div>
 
-    <form action="/auth/choose-role" method="POST" id="roleForm">
+      <h1 class="role-title-main">Join FreelanceHub</h1>
+      <p class="role-subtitle">How do you plan to use FreelanceHub? Choose your primary account type to personalize your dashboard.</p>
+    </header>
+
+    <!-- Role Form -->
+    <form action="/auth/choose-role" method="POST" id="roleForm" onsubmit="handleRoleSubmit(event)">
       <input type="hidden" name="role" id="selectedRoleInput" value="freelancer">
 
-      <div class="roles-grid">
-        <!-- Freelancer Card -->
-        <div class="role-card selected" id="cardFreelancer" onclick="selectRole('freelancer')">
-          <div class="role-radio"><i class="fas fa-check"></i></div>
-          <div class="role-icon-wrap icon-freelancer">
-            <i class="fas fa-laptop-code"></i>
+      <div class="role-cards-grid">
+        <!-- Freelancer Card (Selected by Default) -->
+        <div class="role-card selected" id="cardFreelancer" onclick="selectRole('freelancer')" role="button" tabindex="0">
+          <div class="card-top-bar">
+            <div class="role-icon-box icon-freelancer">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <div class="role-radio-badge">
+              <i class="fas fa-check"></i>
+            </div>
           </div>
-          <h2 class="role-title">I'm a Freelancer</h2>
-          <p class="role-desc">I want to find freelance work, showcase my portfolio, and get paid securely for my skills.</p>
-          <ul class="role-features">
-            <li><i class="fas fa-check-circle"></i> Browse and apply to thousands of jobs</li>
-            <li><i class="fas fa-check-circle"></i> Submit customized proposals & bids</li>
-            <li><i class="fas fa-check-circle"></i> Direct chat and daily progress reports</li>
-            <li><i class="fas fa-check-circle"></i> Fast, guaranteed payments with Escrow</li>
+
+          <span class="role-badge-tag tag-freelancer">Work &amp; Earn</span>
+          <h2 class="card-title">I'm a Freelancer</h2>
+          <p class="card-description">I want to find freelance jobs, pitch customized proposals, showcase my skills, and get paid securely.</p>
+
+          <ul class="role-points-list">
+            <li><i class="fas fa-check-circle"></i> Browse and bid on active client projects</li>
+            <li><i class="fas fa-check-circle"></i> Submit daily progress &amp; task work reports</li>
+            <li><i class="fas fa-check-circle"></i> Direct client messaging &amp; milestone tracking</li>
+            <li><i class="fas fa-check-circle"></i> Guaranteed fast payouts via Escrow protection</li>
           </ul>
         </div>
 
         <!-- Client Card -->
-        <div class="role-card" id="cardClient" onclick="selectRole('client')">
-          <div class="role-radio"><i class="fas fa-check"></i></div>
-          <div class="role-icon-wrap icon-client">
-            <i class="fas fa-briefcase"></i>
+        <div class="role-card" id="cardClient" onclick="selectRole('client')" role="button" tabindex="0">
+          <div class="card-top-bar">
+            <div class="role-icon-box icon-client">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="role-radio-badge">
+              <i class="fas fa-check"></i>
+            </div>
           </div>
-          <h2 class="role-title">I'm a Client</h2>
-          <p class="role-desc">I want to post projects, hire top vetted talent, manage deliverables, and scale my business.</p>
-          <ul class="role-features">
-            <li><i class="fas fa-check-circle"></i> Post projects and receive bids quickly</li>
-            <li><i class="fas fa-check-circle"></i> Compare freelancer portfolios & ratings</li>
-            <li><i class="fas fa-check-circle"></i> Track daily reports & project milestones</li>
-            <li><i class="fas fa-check-circle"></i> Safe Razorpay payments released upon approval</li>
+
+          <span class="role-badge-tag tag-client">Hire Talent</span>
+          <h2 class="card-title">I'm a Client</h2>
+          <p class="card-description">I want to post projects, hire verified top talent, manage milestones, and grow my business smoothly.</p>
+
+          <ul class="role-points-list">
+            <li><i class="fas fa-check-circle"></i> Post projects easily &amp; receive custom proposals</li>
+            <li><i class="fas fa-check-circle"></i> Compare freelancer portfolios, ratings &amp; bids</li>
+            <li><i class="fas fa-check-circle"></i> Track daily reports, deliverables &amp; progress</li>
+            <li><i class="fas fa-check-circle"></i> Safe payments released only upon your approval</li>
           </ul>
         </div>
       </div>
 
-      <div class="submit-wrap">
-        <button type="submit" class="continue-btn" id="continueBtn">
+      <!-- Action Section -->
+      <div class="role-action-section">
+        <button type="submit" class="role-submit-btn" id="continueBtn">
           <span>Continue as Freelancer</span>
           <i class="fas fa-arrow-right"></i>
         </button>
-        <p class="disclaimer">You can adjust profile details anytime from account settings.</p>
+
+        <p class="role-security-note">
+          <i class="fas fa-shield-alt"></i>
+          <span>Secure platform • You can manage full account details in settings</span>
+        </p>
       </div>
     </form>
+
   </div>
 
   <script>
@@ -303,6 +541,28 @@
         cardFreelancer.classList.remove('selected');
         continueBtn.innerHTML = '<span>Continue as Client</span> <i class="fas fa-arrow-right"></i>';
       }
+    }
+
+    // Keyboard navigation (Enter / Space)
+    document.getElementById('cardFreelancer').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectRole('freelancer');
+      }
+    });
+    document.getElementById('cardClient').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectRole('client');
+      }
+    });
+
+    // Handle submit loading state
+    function handleRoleSubmit(e) {
+      const btn = document.getElementById('continueBtn');
+      const role = document.getElementById('selectedRoleInput').value;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Setting up ' + (role === 'client' ? 'Client' : 'Freelancer') + ' account...';
     }
   </script>
 </body>

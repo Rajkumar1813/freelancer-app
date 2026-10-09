@@ -297,6 +297,24 @@
 .role-option input:checked + .role-option-card i {
   color: #6c63ff;
 }
+.role-option input:checked + .role-option-card span {
+  color: #574fd6;
+}
+
+@media (max-width: 480px) {
+  .role-selector {
+    gap: 8px;
+  }
+  .role-option-card {
+    padding: 12px 8px;
+  }
+  .role-option-card span {
+    font-size: 0.85rem;
+  }
+  .role-option-card small {
+    font-size: 0.7rem;
+  }
+}
 
 /* ===== OTP PAGE ===== */
 .otp-container {

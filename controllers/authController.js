@@ -258,7 +258,7 @@ exports.googleCallback = (req, res) => {
 // ── getChooseRole ─────────────────────────────────────────────────────────────
 exports.getChooseRole = (req, res) => {
   if (!req.isAuthenticated()) return res.redirect('/auth/login');
-  if (!req.user.needsRoleSelection) {
+  if (!req.user.needsRoleSelection && !req.query.change) {
     if (req.user.role === 'client') return res.redirect('/client/dashboard');
     if (req.user.role === 'freelancer') return res.redirect('/freelancer/dashboard');
     if (req.user.role === 'admin') return res.redirect('/admin/dashboard');
