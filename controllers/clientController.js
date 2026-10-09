@@ -227,3 +227,27 @@ exports.getGraphDataAPI = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
+
+exports.deleteProject = async (req, res) => {
+  try {
+    const project = await Project.findOne({ _id: req.params.id, client: req.user._id });
+    if (!project) {
+      req.flash('error', 'Project not found or unauthorized');
+      return res.redirect('/client/my-projects');
+    }
+    if (project.status === 'in_progress' && project.paymentStatus === 'escrow_funded') {
+      req.flash('error', 'Cannot delete a project currently in progress with escrow funds. Please complete or cancel escrow first.');
+      return res.redirect('/client/my-projects');
+    }
+    // Delete associated proposals and project
+    await Proposal.deleteMany({ project: project._id });
+    await Project.findByIdAndDelete(project._id);
+
+    req.flash('success', `Project "${project.title}" has been deleted.`);
+    return res.redirect('/client/my-projects');
+  } catch (err) {
+    console.error('[deleteProject]', err);
+    req.flash('error', 'Failed to delete project');
+    return res.redirect('/client/my-projects');
+  }
+};

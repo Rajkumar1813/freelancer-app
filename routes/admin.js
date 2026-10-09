@@ -8,10 +8,11 @@ router.use(isAdmin);
 
 // ── Existing routes (unchanged) ───────────────────────────────────────────────
 router.get('/dashboard',          adminController.getDashboard);
-router.get('/users',              adminController.getUsers);
-router.post('/users/:id/ban',     adminController.banUser);
-router.post('/users/:id/delete',  adminController.deleteUser);
-router.get('/projects',           adminController.getProjects);
+router.get('/users',                      adminController.getUsers);
+router.post('/users/:id/ban',             adminController.banUser);
+router.post('/users/:id/delete',          adminController.deleteUser);
+router.post('/users/:id/reset-password',   adminController.resetUserPassword);
+router.get('/projects',                   adminController.getProjects);
 router.get('/graph-data',         adminController.getGraphDataAPI);
 
 router.get('/settings', (req, res) => {

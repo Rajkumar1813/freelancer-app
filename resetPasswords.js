@@ -5,8 +5,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
-const DEFAULT_USER_PASSWORD = 'Password@123';
-const DEFAULT_ADMIN_PASSWORD = 'Admin@321';
+const DEFAULT_USER_PASSWORD = process.env.RESET_USER_PASSWORD || 'DevPassword@123';
+const DEFAULT_ADMIN_PASSWORD = process.env.RESET_ADMIN_PASSWORD || 'Admin@Secure321';
 
 async function resetAllCredentials() {
   try {

@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
-const ADMIN_EMAIL    = 'fileshare1813@gmail.com';
-const ADMIN_PASSWORD = 'Admin@321';
-const ADMIN_NAME     = 'Super Admin';
+const ADMIN_EMAIL    = process.env.ADMIN_DEFAULT_EMAIL || process.argv[2] || 'admin@example.com';
+const ADMIN_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || process.argv[3] || 'Admin@Secure123';
+const ADMIN_NAME     = process.env.ADMIN_DEFAULT_NAME || 'Super Admin';
 
 async function createAdmin() {
   try {

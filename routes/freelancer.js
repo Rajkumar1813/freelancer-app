@@ -15,6 +15,8 @@ router.post('/submit-report', freelancerController.postReport);
 router.get('/edit-profile', freelancerController.getEditProfile);
 router.post('/edit-profile', upload.single('avatar'), freelancerController.postEditProfile);
 router.post('/message-client', freelancerController.messageClientAboutProject);
+router.post('/proposals/:id/cancel', freelancerController.cancelProposal);
+router.post('/proposals/cancel-by-project/:projectId', freelancerController.cancelProposalByProject);
 router.get('/graph-data', freelancerController.getGraphDataAPI);
 
 module.exports = router;

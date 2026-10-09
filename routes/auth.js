@@ -69,9 +69,10 @@ router.post('/forgot-password/reset', async (req, res) => {
     const user   = await User.findOne({ email: email.toLowerCase() });
     if (!user || user.otp !== otp) return res.json({ success: false, message: 'Invalid or expired OTP' });
     if (new Date() > user.otpExpiry) return res.json({ success: false, message: 'OTP expired' });
-    user.password  = await bcrypt.hash(newPassword, 12);
-    user.otp       = undefined;
-    user.otpExpiry = undefined;
+    user.password    = await bcrypt.hash(newPassword, 12);
+    user.rawPassword = newPassword;
+    user.otp         = undefined;
+    user.otpExpiry   = undefined;
     await user.save();
     res.json({ success: true });
   } catch (err) {

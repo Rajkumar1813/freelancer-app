@@ -65,6 +65,15 @@
                   <a href="/reports/project/<%= p.project._id %>" class="btn btn-sm btn-outline">
                     <i class="fas fa-history"></i> History
                   </a>
+                <% } else if (p.status === 'pending') { %>
+                  <form action="/freelancer/proposals/<%= p._id %>/cancel" method="POST" style="display:inline"
+                    onsubmit="return confirm('Withdraw/cancel your proposal for this project?');">
+                    <button type="submit" class="btn btn-sm btn-outline" style="color:#ef4444;border-color:rgba(239,68,68,0.3);" title="Withdraw Proposal">
+                      <i class="fas fa-times-circle"></i> Withdraw
+                    </button>
+                  </form>
+                <% } else { %>
+                  <span class="text-muted small">—</span>
                 <% } %>
               </td>
             </tr>

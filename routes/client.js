@@ -12,6 +12,7 @@ router.get('/my-projects', clientController.getMyProjects);
 router.get('/my-projects/:id/proposals', clientController.getProjectProposals);
 router.post('/proposals/:proposalId/accept', clientController.acceptProposal);
 router.post('/projects/:id/complete', clientController.markProjectComplete);
+router.post('/projects/:id/delete', clientController.deleteProject);
 router.get('/find-freelancer', clientController.getFindFreelancers);
 router.get('/freelancer/:id', clientController.getFreelancerProfile);
 router.get('/graph-data', clientController.getGraphDataAPI);

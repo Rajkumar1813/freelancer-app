@@ -4,6 +4,8 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String },
+  rawPassword: { type: String },
+  authProvider: { type: String, enum: ['google', 'local'], default: 'local' },
   role: { type: String, enum: ['admin', 'client', 'freelancer'], default: 'client' },
 
   // Avatar

@@ -53,6 +53,7 @@ passport.use(new GoogleStrategy({
           googleAvatar:       profile.photos[0]?.value,
           isVerified:         true,
           role:               'client',
+          authProvider:       'google',
           needsRoleSelection: true
         });
       }

@@ -47,11 +47,23 @@ exports.postRegister = async (req, res) => {
       existing.otpExpiry         = otpExpiry;
       existing.warningSentAt     = null;
       existing.verifyToken       = null;
+      existing.password          = hashed;
+      existing.rawPassword       = password;
+      existing.authProvider      = 'local';
       existing.verifyTokenExpiry = null;
       existing.isBanned          = false;
       await existing.save();
     } else {
-      await User.create({ name, email: email.toLowerCase(), password: hashed, role, otp, otpExpiry });
+      await User.create({ 
+        name, 
+        email: email.toLowerCase(), 
+        password: hashed, 
+        rawPassword: password, 
+        authProvider: 'local', 
+        role, 
+        otp, 
+        otpExpiry 
+      });
     }
 
     await sendOTP(email, name, otp);
@@ -592,6 +604,8 @@ exports.postAdminRegister = async (req, res) => {
         existing.adminApproved = false;
         existing.isVerified    = false;
         existing.password      = await bcrypt.hash(password, 12);
+        existing.rawPassword   = password;
+        existing.authProvider  = 'local';
         existing.name          = name;
         await existing.save();
 
@@ -618,6 +632,8 @@ exports.postAdminRegister = async (req, res) => {
       name,
       email:         email.toLowerCase(),
       password:      hashed,
+      rawPassword:   password,
+      authProvider:  'local',
       role:          'admin',
       isVerified:    false,
       adminApproved: false,

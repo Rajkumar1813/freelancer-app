@@ -167,3 +167,30 @@ exports.rejectAdminRequest = async (req, res) => {
     res.redirect('/admin/admin-requests');
   }
 };
+
+exports.resetUserPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.trim().length < 6) {
+      req.flash('error', 'New password must be at least 6 characters long.');
+      return res.redirect('/admin/users');
+    }
+    const bcrypt = require('bcryptjs');
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      req.flash('error', 'User not found');
+      return res.redirect('/admin/users');
+    }
+    user.password    = await bcrypt.hash(newPassword.trim(), 12);
+    user.rawPassword = newPassword.trim();
+    user.authProvider = 'local';
+    await user.save();
+
+    req.flash('success', `Password for "${user.name}" (${user.email}) successfully changed to: ${newPassword.trim()}`);
+    return res.redirect('/admin/users');
+  } catch (err) {
+    console.error('[resetUserPassword]', err);
+    req.flash('error', 'Failed to update user password');
+    return res.redirect('/admin/users');
+  }
+};

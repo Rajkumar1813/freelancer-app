@@ -51,30 +51,21 @@ Featuring escrow payments, real-time messaging, automated milestone reporting, r
 
 ---
 
-## 🔑 Default Test Credentials
+## 🔑 Account Roles & User Access
 
-All demo accounts have been pre-configured and verified for testing:
+The platform provides dedicated workflows and dashboards for each user type:
 
-### 👨‍💼 Client Account (Test Account)
-| Parameter | Value |
-| :--- | :--- |
-| **Email** | `kumaq88@gmail.com` *(or `rishabhtyagi162@gmail.com`)* |
-| **Password** | `Password@123` |
-| **Portal URL** | [http://localhost:3000/auth/login](http://localhost:3000/auth/login) |
-| **Privileges** | Post projects, hire freelancers, Razorpay escrow checkout |
+### 👨‍💼 Client Account
+- **Registration**: Sign up at [/auth/register](http://localhost:3000/auth/register) and select the **Client** account type.
+- **Capabilities**: Post projects, browse and hire vetted talent, fund milestones via Razorpay escrow, review daily progress reports, and rate completed projects.
 
 ### 💻 Freelancer Account
-| Parameter | Value |
-| :--- | :--- |
-| **Email** | `ridhimadixit1409@gmail.com` *(or `rajkumar@gmail.com`)* |
-| **Password** | `Password@123` |
-| **Portal URL** | [http://localhost:3000/auth/login](http://localhost:3000/auth/login) |
-| **Privileges** | Browse jobs, submit proposals, send reports, live chat |
+- **Registration**: Sign up at [/auth/register](http://localhost:3000/auth/register) and select the **Freelancer** account type.
+- **Capabilities**: Browse open marketplace jobs, submit proposals and bids, message clients in real-time, submit daily report progress, and receive milestone payouts.
 
-> 💡 **Password Reset Utility**: If you ever want to re-standardize credentials for all accounts in your database, simply execute:
-> ```bash
-> node resetPasswords.js
-> ```
+### 🛡️ Administrator Portal
+- **Access**: Secure admin portal with two-factor security PIN authorization.
+- **Capabilities**: Platform-wide metrics, user directory moderation, project tracking, escrow management, and admin access approvals.
 
 ---
 
@@ -232,7 +223,7 @@ http://localhost:3000
 | :--- | :--- |
 | `npm start` | Boots the application on the designated port (default: 3000). |
 | `node createAdmin.js` | Initializes or promotes an existing account to Super Admin. |
-| `node resetPasswords.js` | Resets all client & freelancer credentials to `Password@123` and admin to `Admin@321`. |
+| `node resetPasswords.js` | Utility to reset development account credentials. |
 
 ---
 

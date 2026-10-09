@@ -212,3 +212,51 @@ exports.messageClientAboutProject = async (req, res) => {
     res.redirect('/freelancer/browse-projects');
   }
 };
+
+exports.cancelProposal = async (req, res) => {
+  try {
+    const proposal = await Proposal.findOne({ _id: req.params.id, freelancer: req.user._id });
+    if (!proposal) {
+      req.flash('error', 'Proposal not found or unauthorized');
+      return res.redirect('/freelancer/my-proposals');
+    }
+    if (proposal.status === 'accepted') {
+      req.flash('error', 'Cannot cancel an accepted proposal where work has been initiated.');
+      return res.redirect('/freelancer/my-proposals');
+    }
+    const projectId = proposal.project;
+    await Proposal.findByIdAndDelete(proposal._id);
+    if (projectId) {
+      await Project.findByIdAndUpdate(projectId, { $inc: { proposalCount: -1 } });
+    }
+    req.flash('success', 'Proposal has been successfully withdrawn/cancelled.');
+    return res.redirect(req.headers.referer || '/freelancer/my-proposals');
+  } catch (err) {
+    console.error('[cancelProposal]', err);
+    req.flash('error', 'Failed to cancel proposal');
+    return res.redirect('/freelancer/my-proposals');
+  }
+};
+
+exports.cancelProposalByProject = async (req, res) => {
+  try {
+    const proposal = await Proposal.findOne({ project: req.params.projectId, freelancer: req.user._id });
+    if (!proposal) {
+      req.flash('error', 'No active application found for this project.');
+      return res.redirect('/freelancer/browse-projects');
+    }
+    if (proposal.status === 'accepted') {
+      req.flash('error', 'Cannot withdraw an accepted proposal.');
+      return res.redirect('/freelancer/browse-projects');
+    }
+    await Proposal.findByIdAndDelete(proposal._id);
+    await Project.findByIdAndUpdate(req.params.projectId, { $inc: { proposalCount: -1 } });
+
+    req.flash('success', 'Application withdrawn successfully.');
+    return res.redirect('/freelancer/browse-projects');
+  } catch (err) {
+    console.error('[cancelProposalByProject]', err);
+    req.flash('error', 'Failed to withdraw application');
+    return res.redirect('/freelancer/browse-projects');
+  }
+};
