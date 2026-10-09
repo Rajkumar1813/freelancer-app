@@ -70,4 +70,36 @@ router.get('/project/:projectId', isLoggedIn, async (req, res) => {
   }
 });
 
+// ── GET /reports/api/project/:projectId (AJAX for modals & popups) ──────────
+router.get('/api/project/:projectId', isLoggedIn, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId)
+      .select('title status hiredFreelancer client')
+      .lean();
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    const userId = req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    const isClient = project.client && project.client.toString() === userId;
+    const isHired = project.hiredFreelancer && project.hiredFreelancer.toString() === userId;
+
+    if (!isAdmin && !isClient && !isHired) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const reports = await Report.find({ project: project._id })
+      .populate('freelancer', 'name googleAvatar')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, project, reports });
+  } catch (err) {
+    console.error('[reports api]', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch reports' });
+  }
+});
+
 module.exports = router;

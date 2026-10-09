@@ -54,5 +54,8 @@ const projectSchema = new mongoose.Schema({
 
 // Text index for search
 projectSchema.index({ title: 'text', description: 'text', skills: 'text' });
+projectSchema.index({ client: 1, status: 1 });
+projectSchema.index({ hiredFreelancer: 1, status: 1 });
+projectSchema.index({ status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Project', projectSchema);

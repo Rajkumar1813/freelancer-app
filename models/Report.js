@@ -17,4 +17,7 @@ const reportSchema = new mongoose.Schema({
   clientSeen: { type: Boolean, default: false }
 }, { timestamps: true });
 
+reportSchema.index({ project: 1, createdAt: -1 });
+reportSchema.index({ freelancer: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Report', reportSchema);

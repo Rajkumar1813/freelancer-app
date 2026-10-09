@@ -11,6 +11,9 @@ const dns            = require('dns');
 const connectDB      = require('./config/db');
 const { initSocket } = require('./config/socket');
 require('./config/passport');
+const compression    = require('compression');
+const User           = require('./models/User');
+const Notification   = require('./models/Notification');
 
 const authRoutes         = require('./routes/auth');
 const adminRoutes        = require('./routes/admin');
@@ -28,6 +31,9 @@ dns.setServers(['1.1.1.1', '8.8.8.8']);
 const app    = express();
 const server = http.createServer(app);
 
+// ── Compression (Gzip/Brotli) to speed up all responses ─────────────
+app.use(compression());
+
 // ── Trust proxy — REQUIRED for Render (HTTPS cookies, correct IP) ─
 app.set('trust proxy', 1);
 
@@ -42,7 +48,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0
+  maxAge: '1d'
 }));
 
 // ── Session store — connect-mongo v3/v4 BOTH handle karta hai ─────
@@ -106,7 +112,6 @@ app.use(async (req, res, next) => {
 
   if (req.user) {
     try {
-      const Notification = require('./models/Notification');
       res.locals.unreadNotifications = await Notification.countDocuments({
         recipient: req.user._id, read: false
       });
@@ -126,7 +131,6 @@ app.use(async (req, res, next) => {
       };
 
       try {
-        const User = require('./models/User');
         res.locals.unverifiedCount = await User.countDocuments({
           isVerified: false, isBanned: false, role: { $ne: 'admin' }
         });
@@ -173,11 +177,10 @@ app.get('/', (req, res) => {
 // ── Avatar ────────────────────────────────────────────────────────
 app.get('/avatar/:userId', async (req, res) => {
   try {
-    const User = require('./models/User');
     const user = await User.findById(req.params.userId).select('avatar avatarContentType');
     if (user && user.avatar) {
       res.set('Content-Type', user.avatarContentType || 'image/jpeg');
-      res.set('Cache-Control', 'no-cache, must-revalidate');
+      res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       return res.send(user.avatar);
     }
     res.redirect('/images/default-avatar.png');

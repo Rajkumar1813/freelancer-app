@@ -93,6 +93,8 @@ userSchema.virtual('avatarUrl').get(function () {
   return '/images/default-avatar.png';
 });
 
+userSchema.index({ role: 1, isBanned: 1, isVerified: 1 });
+
 userSchema.set('toJSON',   { virtuals: true });
 userSchema.set('toObject', { virtuals: true });
 

@@ -213,4 +213,18 @@
     setTimeout(sendMessage, 600);
   }
 
+  // ===== INSTANT MOBILE BACK BUTTON HANDLER =====
+  const backBtn = document.querySelector('.chat-back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768) {
+        const layout = document.querySelector('.chat-layout');
+        if (layout) {
+          layout.classList.remove('chat-view-active');
+          layout.classList.add('list-view-active');
+        }
+      }
+    });
+  }
+
 })();

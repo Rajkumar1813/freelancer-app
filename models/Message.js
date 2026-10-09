@@ -9,4 +9,7 @@ const messageSchema = new mongoose.Schema({
   relatedProject: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' }
 }, { timestamps: true });
 
+messageSchema.index({ conversation: 1, createdAt: 1 });
+messageSchema.index({ sender: 1, read: 1 });
+
 module.exports = mongoose.model('Message', messageSchema);

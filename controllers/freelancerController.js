@@ -165,9 +165,16 @@ exports.postReport = async (req, res) => {
     const pop = await notif.populate('sender', 'name googleAvatar');
     getIO().to(`user_${project.client}`).emit('newNotification', pop);
 
+    if (req.xhr || req.headers.accept?.includes('application/json') || req.is('json')) {
+      return res.json({ success: true, message: 'Daily report submitted successfully to client!' });
+    }
+
     req.flash('success', 'Daily report submitted to client!');
     res.redirect('/freelancer/my-proposals');
   } catch (err) {
+    if (req.xhr || req.headers.accept?.includes('application/json') || req.is('json')) {
+      return res.status(500).json({ success: false, message: 'Failed to submit report: ' + err.message });
+    }
     req.flash('error', 'Failed to submit report');
     res.redirect('/freelancer/submit-report');
   }

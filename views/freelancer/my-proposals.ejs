@@ -83,12 +83,12 @@
               <td><%= new Date(p.createdAt).toLocaleDateString('en-IN') %></td>
               <td>
                 <% if (p.status === 'accepted' && p.project) { %>
-                  <a href="/freelancer/submit-report?project=<%= p.project._id %>" class="btn btn-sm btn-primary">
+                  <button type="button" class="btn btn-sm btn-primary" onclick="openReportModal('<%= p.project._id %>', '<%= (p.project.title || '').replace(/'/g, '\\\'') %>')">
                     <i class="fas fa-file-alt"></i> Report
-                  </a>
-                  <a href="/reports/project/<%= p.project._id %>" class="btn btn-sm btn-outline">
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="openHistoryModal('<%= p.project._id %>', '<%= (p.project.title || '').replace(/'/g, '\\\'') %>')">
                     <i class="fas fa-history"></i> History
-                  </a>
+                  </button>
                 <% } else if (p.status === 'pending') { %>
                   <form action="/freelancer/proposals/<%= p._id %>/cancel" method="POST" style="display:inline"
                     onsubmit="return confirm('Withdraw/cancel your proposal for this project?');">
@@ -107,9 +107,249 @@
       </div>
     </main>
   </div>
+
+  <!-- ================================================================
+       MODAL 1: SUBMIT DAILY REPORT (POPUP)
+       ================================================================ -->
+  <div class="modal-overlay" id="reportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:540px;width:100%;padding:22px;box-shadow:0 24px 48px rgba(0,0,0,0.5);max-height:92vh;overflow-y:auto;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;color:var(--text-primary);">
+          <i class="fas fa-file-alt" style="color:var(--primary);"></i> Submit Daily Report
+        </h3>
+        <button type="button" onclick="closeReportModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:2px 8px;">&times;</button>
+      </div>
+
+      <p style="font-size:0.86rem;color:var(--text-secondary);margin-bottom:14px;">
+        Project: <strong id="reportModalProjectTitle" style="color:var(--text-primary);"></strong>
+      </p>
+
+      <form id="ajaxReportForm" onsubmit="submitReportAjax(event)">
+        <input type="hidden" name="projectId" id="reportProjectId">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;">Hours Worked Today</label>
+            <input type="number" name="hoursWorked" class="form-input" min="0.5" max="24" step="0.5" placeholder="e.g. 5" required style="width:100%;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;">Progress (%)</label>
+            <input type="number" name="progressPercentage" class="form-input" min="0" max="100" placeholder="e.g. 40" required style="width:100%;box-sizing:border-box;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;">Tasks Completed Today (One per line)</label>
+          <textarea name="tasksCompleted" class="form-textarea" rows="3" placeholder="• Completed login authentication&#10;• Designed dashboard header" required style="width:100%;box-sizing:border-box;"></textarea>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;">Tasks Planned for Tomorrow</label>
+          <textarea name="tasksPlanned" class="form-textarea" rows="2" placeholder="• Implement Stripe payment escrow&#10;• Add error handling" style="width:100%;box-sizing:border-box;"></textarea>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;">Blockers / Challenges (Optional)</label>
+          <input type="text" name="blockers" class="form-input" placeholder="Any issue or waiting on client asset..." style="width:100%;box-sizing:border-box;">
+        </div>
+
+        <div id="reportFormMsg" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:8px;font-size:0.85rem;"></div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button type="button" onclick="closeReportModal()" class="btn btn-outline btn-sm">Cancel</button>
+          <button type="submit" id="reportSubmitBtn" class="btn btn-primary btn-sm">
+            <i class="fas fa-paper-plane"></i> Submit Report
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 2: REPORT HISTORY TIMELINE (POPUP)
+       ================================================================ -->
+  <div class="modal-overlay" id="historyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:620px;width:100%;padding:22px;box-shadow:0 24px 48px rgba(0,0,0,0.5);max-height:92vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;color:var(--text-primary);">
+          <i class="fas fa-history" style="color:var(--primary);"></i> Daily Reports History
+        </h3>
+        <button type="button" onclick="closeHistoryModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:2px 8px;">&times;</button>
+      </div>
+
+      <p style="font-size:0.86rem;color:var(--text-secondary);margin-bottom:14px;">
+        Project: <strong id="historyModalProjectTitle" style="color:var(--text-primary);"></strong>
+      </p>
+
+      <div id="historyReportsList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;">
+        <div style="text-align:center;padding:30px;color:var(--text-muted);">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p style="margin-top:8px;">Loading report history...</p>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);">
+        <button type="button" onclick="closeHistoryModal()" class="btn btn-outline btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/main.js"></script>
   <script src="/js/notifications.js"></script>
   <script src="/js/theme.js"></script>
-  <script>const USER_ID = '<%= currentUser._id %>';</script>
+  <script>
+    const USER_ID = '<%= currentUser._id %>';
+
+    // ── Report Modal Handlers ─────────────────────────────────────────
+    function openReportModal(projectId, projectTitle) {
+      document.getElementById('reportProjectId').value = projectId;
+      document.getElementById('reportModalProjectTitle').textContent = projectTitle;
+      document.getElementById('ajaxReportForm').reset();
+      document.getElementById('reportFormMsg').style.display = 'none';
+      document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').style.display = 'none';
+    }
+
+    async function submitReportAjax(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('reportSubmitBtn');
+      const msg = document.getElementById('reportFormMsg');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const res = await fetch('/freelancer/submit-report', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          msg.style.display = 'block';
+          msg.style.background = 'rgba(34,197,94,0.15)';
+          msg.style.color = '#16a34a';
+          msg.innerHTML = '<i class="fas fa-check-circle"></i> ' + (json.message || 'Report submitted successfully!');
+          setTimeout(() => {
+            closeReportModal();
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Report';
+          }, 1200);
+        } else {
+          throw new Error(json.message || 'Submission failed');
+        }
+      } catch (err) {
+        msg.style.display = 'block';
+        msg.style.background = 'rgba(239,68,68,0.15)';
+        msg.style.color = '#ef4444';
+        msg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + err.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Report';
+      }
+    }
+
+    // ── History Modal Handlers ────────────────────────────────────────
+    async function openHistoryModal(projectId, projectTitle) {
+      document.getElementById('historyModalProjectTitle').textContent = projectTitle;
+      const listEl = document.getElementById('historyReportsList');
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:30px;color:var(--text-muted);">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p style="margin-top:8px;">Loading report history...</p>
+        </div>`;
+      document.getElementById('historyModal').style.display = 'flex';
+
+      try {
+        const res = await fetch('/reports/api/project/' + projectId);
+        const data = await res.json();
+
+        if (!data.success || !data.reports || data.reports.length === 0) {
+          listEl.innerHTML = `
+            <div style="text-align:center;padding:36px 16px;color:var(--text-muted);border:1px dashed var(--border);border-radius:12px;">
+              <i class="fas fa-file-alt fa-2x" style="opacity:0.4;margin-bottom:8px;"></i>
+              <p style="margin:0;">No daily reports submitted yet for this project.</p>
+            </div>`;
+          return;
+        }
+
+        listEl.innerHTML = data.reports.map(r => `
+          <div style="background:var(--secondary);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+              <span style="font-weight:700;font-size:0.88rem;color:var(--text-primary);">
+                📅 ${new Date(r.createdAt || r.date).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+              </span>
+              <div style="display:flex;gap:6px;">
+                <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.75rem;">
+                  ⏱ ${r.hoursWorked} hrs
+                </span>
+                <span class="badge" style="background:rgba(34,197,94,0.15);color:#16a34a;font-size:0.75rem;">
+                  ${r.progressPercentage || 0}% progress
+                </span>
+              </div>
+            </div>
+
+            ${r.tasksCompleted && r.tasksCompleted.length > 0 ? `
+              <div>
+                <strong style="font-size:0.76rem;text-transform:uppercase;color:var(--text-muted);">Completed Tasks:</strong>
+                <ul style="margin:4px 0 0 18px;padding:0;font-size:0.85rem;color:var(--text-primary);">
+                  ${r.tasksCompleted.map(t => `<li>${t}</li>`).join('')}
+                </ul>
+              </div>` : ''}
+
+            ${r.tasksPlanned && r.tasksPlanned.length > 0 ? `
+              <div>
+                <strong style="font-size:0.76rem;text-transform:uppercase;color:var(--text-muted);">Next Planned:</strong>
+                <ul style="margin:4px 0 0 18px;padding:0;font-size:0.85rem;color:var(--text-secondary);">
+                  ${r.tasksPlanned.map(t => `<li>${t}</li>`).join('')}
+                </ul>
+              </div>` : ''}
+
+            ${r.blockers ? `
+              <div style="font-size:0.82rem;background:rgba(239,68,68,0.1);color:#ef4444;padding:6px 10px;border-radius:6px;">
+                <strong>Blocker:</strong> ${r.blockers}
+              </div>` : ''}
+          </div>
+        `).join('');
+
+      } catch (err) {
+        listEl.innerHTML = `
+          <div style="text-align:center;padding:24px;color:#ef4444;">
+            <i class="fas fa-exclamation-triangle fa-2x"></i>
+            <p style="margin-top:8px;">Failed to load reports: ${err.message}</p>
+          </div>`;
+      }
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').style.display = 'none';
+    }
+
+    // Backdrop click listeners
+    document.getElementById('reportModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('reportModal')) closeReportModal();
+    });
+    document.getElementById('historyModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('historyModal')) closeHistoryModal();
+    });
+
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeReportModal();
+        closeHistoryModal();
+      }
+    });
+  </script>
 </body>
 </html>

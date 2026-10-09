@@ -635,25 +635,27 @@
     width: 100%;
   }
 
-  /* When viewing conversation list on mobile: Sidebar is 100%, Chat window hidden */
-  .chat-layout.list-view-active .chat-sidebar {
-    width: 100%;
-    max-width: 100%;
-    min-width: 100%;
-    display: flex;
-    border-right: none;
+  /* DEFAULT ON MOBILE: Conversation list takes 100%, Chat window hidden */
+  .chat-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    display: flex !important;
+    border-right: none !important;
   }
-  .chat-layout.list-view-active .chat-window {
+  .chat-window {
     display: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
-  /* When inside an active conversation on mobile: Sidebar hidden, Chat window is 100% */
+  /* ONLY WHEN active conversation is open: Hide sidebar, show chat window */
   .chat-layout.chat-view-active .chat-sidebar {
     display: none !important;
   }
   .chat-layout.chat-view-active .chat-window {
-    width: 100%;
-    display: flex;
+    display: flex !important;
+    width: 100% !important;
   }
 
   /* Back button prominently visible on mobile */
