@@ -7,7 +7,79 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
   <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .crop-modal-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .crop-modal-box {
+      background: #141426;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      width: 100%; max-width: 520px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+      overflow: hidden;
+      animation: zoomInModal 0.25s ease;
+      display: flex; flex-direction: column;
+    }
+    @keyframes zoomInModal {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .crop-modal-header {
+      padding: 18px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .crop-modal-header h3 {
+      font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .crop-modal-close {
+      background: none; border: none; color: rgba(255,255,255,0.5);
+      font-size: 1.4rem; cursor: pointer; transition: color 0.2s;
+    }
+    .crop-modal-close:hover { color: #fff; }
+    .crop-area-container {
+      height: 330px; width: 100%;
+      background: #090912;
+      position: relative;
+      overflow: hidden;
+    }
+    .crop-controls {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 14px 20px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .crop-btn-tool {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; border-radius: 8px;
+      padding: 7px 12px; font-size: 0.85rem;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .crop-btn-tool:hover {
+      background: rgba(108, 99, 255, 0.25);
+      border-color: #6c63ff;
+    }
+    .crop-modal-footer {
+      padding: 16px 24px;
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+    .cropper-view-box, .cropper-face {
+      border-radius: 50%;
+    }
+  </style>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
@@ -20,15 +92,16 @@
       </div>
       <div class="form-card">
         <form action="/freelancer/edit-profile" method="POST" enctype="multipart/form-data" class="profile-form">
+          <input type="hidden" name="avatarBase64" id="avatarBase64">
           <div class="form-section">
             <h3><i class="fas fa-camera"></i> Profile Photo</h3>
             <div class="avatar-upload-wrap">
               <img src="<%= user.googleAvatar || '/avatar/' + user._id %>"
                 class="avatar-preview" id="avatarPreview" onerror="this.src='/images/default-avatar.png'">
               <div>
-                <label for="avatarInput" class="btn btn-outline btn-sm"><i class="fas fa-upload"></i> Upload Photo</label>
+                <label for="avatarInput" class="btn btn-outline btn-sm"><i class="fas fa-crop-alt"></i> Choose & Crop Photo</label>
                 <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
-                <p class="form-hint">Max 5MB. JPG, PNG, GIF, WebP</p>
+                <p class="form-hint">Max 5MB. JPG, PNG, GIF, WebP. Zoom & crop with precision.</p>
                 <% if (user.googleAvatar) { %><p class="form-hint text-info"><i class="fas fa-google"></i> Currently using Google profile photo</p><% } %>
               </div>
             </div>
@@ -96,18 +169,127 @@
       </div>
     </main>
   </div>
+  <!-- Avatar Crop Modal -->
+  <div class="crop-modal-overlay" id="cropModalOverlay">
+    <div class="crop-modal-box">
+      <div class="crop-modal-header">
+        <h3><i class="fas fa-crop-alt"></i> Crop Profile Photo</h3>
+        <button type="button" class="crop-modal-close" onclick="closeCropModal()">×</button>
+      </div>
+      <div class="crop-area-container">
+        <img id="imageToCrop" src="" alt="Crop preview" style="max-width:100%; display:block;">
+      </div>
+      <div class="crop-controls">
+        <button type="button" class="crop-btn-tool" onclick="if(cropper)cropper.zoom(0.1)" title="Zoom In">
+          <i class="fas fa-search-plus"></i>
+        </button>
+        <button type="button" class="crop-btn-tool" onclick="if(cropper)cropper.zoom(-0.1)" title="Zoom Out">
+          <i class="fas fa-search-minus"></i>
+        </button>
+        <button type="button" class="crop-btn-tool" onclick="if(cropper)cropper.rotate(-90)" title="Rotate Left">
+          <i class="fas fa-undo"></i>
+        </button>
+        <button type="button" class="crop-btn-tool" onclick="if(cropper)cropper.rotate(90)" title="Rotate Right">
+          <i class="fas fa-redo"></i>
+        </button>
+        <button type="button" class="crop-btn-tool" onclick="if(cropper)cropper.reset()" title="Reset Crop">
+          <i class="fas fa-sync-alt"></i> Reset
+        </button>
+      </div>
+      <div class="crop-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeCropModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="applyCropBtn" onclick="applyCroppedAvatar()">
+          <i class="fas fa-check"></i> Apply Cropped Photo
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/main.js"></script>
   <script src="/js/notifications.js"></script>
   <script src="/js/theme.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>
     const USER_ID = '<%= currentUser._id %>';
+    let cropper = null;
+
     function previewAvatar(input) {
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => document.getElementById('avatarPreview').src = e.target.result;
-        reader.readAsDataURL(input.files[0]);
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) {
+        alert('Please choose a valid image file (JPG, PNG, WebP).');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        openCropModal(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openCropModal(imageSrc) {
+      const modal = document.getElementById('cropModalOverlay');
+      const img = document.getElementById('imageToCrop');
+      modal.style.display = 'flex';
+      img.src = imageSrc;
+
+      if (cropper) cropper.destroy();
+
+      setTimeout(() => {
+        cropper = new Cropper(img, {
+          aspectRatio: 1,
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 0.85,
+          restore: false,
+          guides: true,
+          center: true,
+          highlight: false,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+          toggleDragModeOnDblclick: false,
+        });
+      }, 50);
+    }
+
+    function closeCropModal() {
+      const modal = document.getElementById('cropModalOverlay');
+      modal.style.display = 'none';
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
       }
     }
+
+    function applyCroppedAvatar() {
+      if (!cropper) return;
+      const canvas = cropper.getCroppedCanvas({
+        width: 400,
+        height: 400,
+        imageSmoothingQuality: 'high'
+      });
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      document.getElementById('avatarPreview').src = dataUrl;
+      document.getElementById('avatarBase64').value = dataUrl;
+
+      // Also set to file input via DataTransfer if supported
+      try {
+        canvas.toBlob((blob) => {
+          if (blob && window.DataTransfer) {
+            const dt = new DataTransfer();
+            const croppedFile = new File([blob], 'cropped-avatar.jpg', { type: 'image/jpeg' });
+            dt.items.add(croppedFile);
+            document.getElementById('avatarInput').files = dt.files;
+          }
+        }, 'image/jpeg', 0.9);
+      } catch (e) {
+        console.warn('DataTransfer not supported:', e);
+      }
+
+      closeCropModal();
+    }
+
     function addSkill(skill) {
       const input = document.getElementById('skillsInput');
       const skills = input.value ? input.value.split(',').map(s => s.trim()) : [];

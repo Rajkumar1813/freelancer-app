@@ -54,37 +54,49 @@
         <div class="project-list-card">
           <div class="plc-header">
             <div class="plc-title-wrap">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                <span class="badge status-open" style="font-size:0.75rem;padding:3px 10px;border-radius:20px;">
+                  <i class="fas fa-circle" style="font-size:0.5rem;margin-right:4px;"></i> Open for Bids
+                </span>
+                <span class="badge" style="background:rgba(108,99,255,0.12);color:#6c63ff;font-size:0.75rem;padding:3px 10px;border-radius:20px;">
+                  <i class="fas fa-layer-group"></i> <%= p.category %>
+                </span>
+              </div>
               <h3 class="plc-title"><%= p.title %></h3>
               <div class="plc-meta">
-                <span><i class="fas fa-folder"></i> <%= p.category %></span>
-                <span><i class="fas fa-clock"></i> <%= p.deadline ? 'Due: ' + new Date(p.deadline).toLocaleDateString('en-IN') : 'Flexible' %></span>
-                <span><i class="fas fa-users"></i> <%= p.proposalCount || 0 %> proposals</span>
-                <span><i class="fas fa-user"></i> <%= p.client?.name || 'Client' %></span>
+                <span><i class="fas fa-user-check"></i> <%= p.client?.name || 'Client' %></span>
+                <span><i class="fas fa-clock"></i> <%= p.deadline ? 'Due: ' + new Date(p.deadline).toLocaleDateString('en-IN') : 'Flexible timeline' %></span>
+                <span><i class="fas fa-paper-plane"></i> <%= p.proposalCount || 0 %> proposals</span>
               </div>
             </div>
-            <div class="plc-budget">
+            <div class="plc-budget-box">
               <div class="budget-amount">₹<%= (p.budget||0).toLocaleString('en-IN') %></div>
-              <div class="budget-type"><%= p.budgetType === 'hourly' ? '/hr' : 'Fixed' %></div>
+              <div class="budget-type"><%= p.budgetType === 'hourly' ? 'Hourly' : 'Fixed Price' %></div>
             </div>
           </div>
-          <p class="plc-desc"><%= p.description.substring(0,200) %>...</p>
+          <p class="plc-desc"><%= p.description.substring(0,230) %><%= p.description.length > 230 ? '...' : '' %></p>
           <div class="tags-row">
-            <% (p.skills||[]).forEach(sk => { %><span class="tag <%= currentUser.skills && currentUser.skills.includes(sk) ? 'tag-match' : '' %>"><%= sk %></span><% }) %>
+            <% (p.skills||[]).forEach(sk => { %>
+              <span class="tag <%= currentUser.skills && currentUser.skills.includes(sk) ? 'tag-match' : '' %>">
+                <%= currentUser.skills && currentUser.skills.includes(sk) ? '✓ ' : '' %><%= sk %>
+              </span>
+            <% }) %>
           </div>
           <div class="plc-actions">
             <% if (p.alreadyApplied) { %>
-              <span class="badge badge-success"><i class="fas fa-check"></i> Already Applied</span>
+              <span class="badge badge-success" style="font-size:0.88rem;padding:8px 16px;border-radius:10px;">
+                <i class="fas fa-check-circle"></i> Already Applied
+              </span>
             <% } else { %>
-              <button class="btn btn-primary btn-sm" onclick="openApplyModal('<%= p._id %>', '<%= p.title.replace(/'/g, '') %>', <%= p.budget %>)">
+              <button class="btn btn-primary" onclick="openApplyModal('<%= p._id %>', '<%= p.title.replace(/'/g, '') %>', <%= p.budget %>)">
                 <i class="fas fa-paper-plane"></i> Apply Now
               </button>
             <% } %>
-            <!-- Message client directly about this project -->
             <form action="/freelancer/message-client" method="POST" style="display:inline">
               <input type="hidden" name="clientId" value="<%= p.client?._id %>">
               <input type="hidden" name="projectId" value="<%= p._id %>">
               <input type="hidden" name="message" value="Hi, I'm interested in your project: <%= p.title %>">
-              <button type="submit" class="btn btn-outline btn-sm"><i class="fas fa-comment"></i> Message Client</button>
+              <button type="submit" class="btn btn-outline"><i class="fas fa-comment-dots"></i> Message Client</button>
             </form>
           </div>
         </div>

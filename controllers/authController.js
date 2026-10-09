@@ -210,10 +210,80 @@ exports.logout = (req, res) => {
 
 // ── googleCallback ────────────────────────────────────────────────────────────
 exports.googleCallback = (req, res) => {
-  const role = req.user.role;
-  if (role === 'admin')      return res.redirect('/admin/dashboard');
-  if (role === 'client')     return res.redirect('/client/dashboard');
+  const user = req.user;
+  if (!user) return res.redirect('/auth/login');
+
+  // 1. Admin login via Google MUST require 2FA PIN (181337)
+  if (user.role === 'admin') {
+    if (user.adminApproved === false) {
+      req.logout(() => {});
+      req.flash('error', 'Your admin account is pending approval by the Super Admin. Please wait for authorization.');
+      return res.redirect('/auth/admin/login');
+    }
+    const pendingAdmin = {
+      userId: user._id.toString(),
+      email:  user.email,
+      name:   user.name
+    };
+    req.logout((err) => {
+      req.session.pendingAdminPin = pendingAdmin;
+      req.session.save(() => {
+        return res.redirect('/auth/admin/verify-pin');
+      });
+    });
+    return;
+  }
+
+  // 2. New Google user needs role selection (Freelancer vs Client)
+  if (user.needsRoleSelection) {
+    return res.redirect('/auth/choose-role');
+  }
+
+  if (user.role === 'client') return res.redirect('/client/dashboard');
   return res.redirect('/freelancer/dashboard');
+};
+
+// ── getChooseRole ─────────────────────────────────────────────────────────────
+exports.getChooseRole = (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect('/auth/login');
+  if (!req.user.needsRoleSelection) {
+    if (req.user.role === 'client') return res.redirect('/client/dashboard');
+    if (req.user.role === 'freelancer') return res.redirect('/freelancer/dashboard');
+    if (req.user.role === 'admin') return res.redirect('/admin/dashboard');
+  }
+  return res.render('auth/choose-role', {
+    title: 'Select Account Type - FreelanceHub',
+    user:  req.user
+  });
+};
+
+// ── postChooseRole ────────────────────────────────────────────────────────────
+exports.postChooseRole = async (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect('/auth/login');
+  const { role } = req.body;
+
+  if (!['client', 'freelancer'].includes(role)) {
+    req.flash('error', 'Please choose either Client or Freelancer.');
+    return res.redirect('/auth/choose-role');
+  }
+
+  try {
+    const user = await User.findById(req.user._id);
+    user.role = role;
+    user.needsRoleSelection = false;
+    await user.save();
+
+    req.user.role = role;
+    req.user.needsRoleSelection = false;
+
+    req.flash('success', `Account configured successfully as ${role === 'client' ? 'Client' : 'Freelancer'}!`);
+    if (role === 'client') return res.redirect('/client/dashboard');
+    return res.redirect('/freelancer/dashboard');
+  } catch (err) {
+    console.error('[postChooseRole]', err);
+    req.flash('error', 'Failed to update account role.');
+    return res.redirect('/auth/choose-role');
+  }
 };
 
 // ── getVerifyAccount (warning email link se) ──────────────────────────────────

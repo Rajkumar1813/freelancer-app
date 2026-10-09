@@ -2,7 +2,7 @@ const express  = require('express');
 const router   = express.Router();
 const passport = require('passport');
 const authController = require('../controllers/authController');
-const { isNotLoggedIn } = require('../middleware/auth');
+const { isNotLoggedIn, isLoggedIn } = require('../middleware/auth');
 
 // ── Regular user routes ───────────────────────────────────────────────────────
 router.get('/login',    isNotLoggedIn, authController.getLogin);
@@ -13,6 +13,10 @@ router.get('/verify-otp',  authController.getVerifyOTP);
 router.post('/verify-otp', authController.postVerifyOTP);
 router.post('/resend-otp', authController.postResendOTP);
 router.get('/logout',      authController.logout);
+
+// ── Role Selection (First-time Google users) ──────────────────────────────────
+router.get('/choose-role',  isLoggedIn, authController.getChooseRole);
+router.post('/choose-role', isLoggedIn, authController.postChooseRole);
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

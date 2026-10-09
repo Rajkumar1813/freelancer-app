@@ -47,26 +47,39 @@
         <div class="project-card">
           <div class="project-card-header">
             <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                <span class="badge status-<%= p.status %>">
+                  <i class="fas fa-circle" style="font-size:0.5rem;margin-right:4px;"></i> <%= p.status.replace('_',' ') %>
+                </span>
+                <span class="badge priority-<%= p.priority || 'medium' %>">
+                  <%= (p.priority || 'medium').toUpperCase() %> PRIORITY
+                </span>
+              </div>
               <h3 class="project-title"><%= p.title %></h3>
-              <span class="badge status-<%= p.status %>"><%= p.status.replace('_',' ') %></span>
-              <span class="badge priority-<%= p.priority || 'medium' %>"><%= p.priority || 'medium' %></span>
             </div>
-            <div class="project-budget">₹<%= (p.budget || 0).toLocaleString('en-IN') %></div>
+            <div class="project-budget-pill">
+              <div class="project-budget">₹<%= (p.budget || 0).toLocaleString('en-IN') %></div>
+              <span style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:0.06em;">Budget</span>
+            </div>
           </div>
-          <p class="project-desc"><%= p.description.substring(0,120) %>...</p>
+          <p class="project-desc"><%= p.description.substring(0,140) %><%= p.description.length > 140 ? '...' : '' %></p>
           <div class="tags-row">
-            <% (p.skills || []).slice(0,4).forEach(sk => { %><span class="tag"><%= sk %></span><% }) %>
+            <% (p.skills || []).slice(0,5).forEach(sk => { %>
+              <span class="tag"><%= sk %></span>
+            <% }) %>
           </div>
           <div class="project-meta">
             <span><i class="fas fa-paper-plane"></i> <%= p.proposalCount || 0 %> proposals</span>
             <% if (p.hiredFreelancer) { %>
-              <span><i class="fas fa-user-check"></i> Hired: <%= p.hiredFreelancer.name %></span>
+              <span style="color:#10b981;font-weight:600;"><i class="fas fa-user-check"></i> Hired: <%= p.hiredFreelancer.name %></span>
             <% } %>
-            <% if (p.deadline) { %><span><i class="fas fa-calendar"></i> Due: <%= new Date(p.deadline).toLocaleDateString('en-IN') %></span><% } %>
+            <% if (p.deadline) { %>
+              <span><i class="fas fa-calendar-alt"></i> Due: <%= new Date(p.deadline).toLocaleDateString('en-IN') %></span>
+            <% } %>
           </div>
           <div class="project-card-actions">
             <a href="/client/my-projects/<%= p._id %>/proposals" class="btn btn-sm btn-primary">
-              <i class="fas fa-users"></i> View Proposals
+              <i class="fas fa-users"></i> View Proposals (<%= p.proposalCount || 0 %>)
             </a>
             <% if (p.hiredFreelancer) { %>
               <a href="/reports/project/<%= p._id %>" class="btn btn-sm btn-outline">
@@ -75,7 +88,7 @@
             <% } %>
             <% if (p.status === 'in_progress') { %>
               <a href="/payments/project/<%= p._id %>" class="btn btn-sm btn-warning">
-                <i class="fas fa-credit-card"></i> Pay Now
+                <i class="fas fa-credit-card"></i> Escrow Pay
               </a>
               <form action="/payments/project/<%= p._id %>/complete" method="POST" style="display:inline">
                 <button type="submit" class="btn btn-sm btn-success"

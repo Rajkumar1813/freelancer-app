@@ -159,7 +159,7 @@ app.get('/avatar/:userId', async (req, res) => {
     const user = await User.findById(req.params.userId).select('avatar avatarContentType');
     if (user && user.avatar) {
       res.set('Content-Type', user.avatarContentType || 'image/jpeg');
-      res.set('Cache-Control', 'public, max-age=86400');
+      res.set('Cache-Control', 'no-cache, must-revalidate');
       return res.send(user.avatar);
     }
     res.redirect('/images/default-avatar.png');

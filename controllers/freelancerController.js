@@ -167,6 +167,13 @@ exports.postEditProfile = async (req, res) => {
       updateData.avatar = req.file.buffer;
       updateData.avatarContentType = req.file.mimetype;
       updateData.googleAvatar = null; // Remove google avatar if uploading own
+    } else if (req.body.avatarBase64) {
+      const matches = req.body.avatarBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        updateData.avatarContentType = matches[1];
+        updateData.avatar = Buffer.from(matches[2], 'base64');
+        updateData.googleAvatar = null;
+      }
     }
 
     await User.findByIdAndUpdate(req.user._id, updateData);

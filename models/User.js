@@ -57,6 +57,7 @@ const userSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   isBanned: { type: Boolean, default: false },
   adminApproved: { type: Boolean, default: false },
+  needsRoleSelection: { type: Boolean, default: false },
 
   // Password reset
   resetPasswordToken: { type: String },

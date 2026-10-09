@@ -47,12 +47,13 @@ passport.use(new GoogleStrategy({
         await user.save();
       } else {
         user = await User.create({
-          googleId:     profile.id,
-          name:         profile.displayName,
-          email:        profile.emails[0].value,
-          googleAvatar: profile.photos[0]?.value,
-          isVerified:   true,
-          role:         'client'
+          googleId:           profile.id,
+          name:               profile.displayName,
+          email:              profile.emails[0].value.toLowerCase(),
+          googleAvatar:       profile.photos[0]?.value,
+          isVerified:         true,
+          role:               'client',
+          needsRoleSelection: true
         });
       }
     }
