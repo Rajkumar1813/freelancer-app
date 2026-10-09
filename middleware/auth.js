@@ -8,11 +8,50 @@ const isLoggedIn = (req, res, next) => {
   res.redirect('/auth/login');
 };
 
+// Check if user is Super Admin
+const isSuperAdmin = (user) => {
+  if (!user) return false;
+  return Boolean(user.isSuperAdmin || user.email === 'fileshare1813@gmail.com' || user.adminRole === 'super_admin');
+};
+
+// Check if admin has specific permission
+const hasPermission = (user, permKey) => {
+  if (!user || user.role !== 'admin') return false;
+  if (isSuperAdmin(user)) return true;
+  return Boolean(user.adminPermissions && user.adminPermissions[permKey]);
+};
+
 // Role guards
 const isAdmin = (req, res, next) => {
-  if (req.isAuthenticated() && req.user.role === 'admin') return next();
+  if (req.isAuthenticated() && req.user.role === 'admin') {
+    if (!isSuperAdmin(req.user) && req.user.adminApproved === false) {
+      req.logout(() => {});
+      req.flash('error', 'Your manager/admin account is pending Super Admin authorization.');
+      return res.redirect('/auth/admin/login');
+    }
+    return next();
+  }
   req.flash('error', 'Admin access required');
-  res.redirect('/');
+  res.redirect('/auth/admin/login');
+};
+
+// Middleware: Require specific permission for route
+const requirePermission = (permKey) => {
+  return (req, res, next) => {
+    if (!req.isAuthenticated()) return res.redirect('/auth/admin/login');
+    if (req.user.role !== 'admin') return res.redirect('/');
+    if (hasPermission(req.user, permKey)) return next();
+    req.flash('error', 'Access Restricted: You do not have permission for this section.');
+    return res.redirect('/admin/dashboard');
+  };
+};
+
+// Middleware: Super Admin only
+const isSuperAdminOnly = (req, res, next) => {
+  if (!req.isAuthenticated()) return res.redirect('/auth/admin/login');
+  if (isSuperAdmin(req.user)) return next();
+  req.flash('error', 'Super Admin privileges required to manage team roles and permissions.');
+  return res.redirect('/admin/dashboard');
 };
 
 const isClient = (req, res, next) => {
@@ -62,4 +101,16 @@ const isNotBanned = (req, res, next) => {
   next();
 };
 
-module.exports = { isLoggedIn, isAdmin, isClient, isFreelancer, isClientOrFreelancer, isNotLoggedIn, isNotBanned };
+module.exports = {
+  isLoggedIn,
+  isAdmin,
+  isSuperAdmin,
+  hasPermission,
+  requirePermission,
+  isSuperAdminOnly,
+  isClient,
+  isFreelancer,
+  isClientOrFreelancer,
+  isNotLoggedIn,
+  isNotBanned
+};

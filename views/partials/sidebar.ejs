@@ -1,34 +1,75 @@
 <% if (currentUser) { %>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <aside class="sidebar">
   <div class="sidebar-user">
     <img src="<%= currentUser.googleAvatar || '/avatar/' + currentUser._id %>"
          alt="<%= currentUser.name %>" class="sidebar-avatar"
          onerror="this.src='/images/default-avatar.png'">
-    <div>
+    <div style="min-width:0;flex:1;">
       <div class="sidebar-name"><%= currentUser.name.split(' ').slice(0,2).join(' ') %></div>
-      <div class="sidebar-role role-<%= currentUser.role %>"><%= currentUser.role %></div>
+      <% if (currentUser.role === 'admin') { %>
+        <div class="sidebar-role <%= (typeof isSuperAdmin !== 'undefined' && isSuperAdmin) ? 'role-superadmin' : 'role-manager' %>">
+          <%= (typeof isSuperAdmin !== 'undefined' && isSuperAdmin) ? '⚡ Super Admin' : '🛡️ Manager' %>
+        </div>
+      <% } else { %>
+        <div class="sidebar-role role-<%= currentUser.role %>"><%= currentUser.role %></div>
+      <% } %>
     </div>
+    <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
   <nav class="sidebar-nav">
-    <% if (currentUser.role === 'admin') { %>
-      <a href="/admin/dashboard"        class="sidebar-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
-      <a href="/admin/users"            class="sidebar-link"><i class="fas fa-users"></i><span>Manage Users</span></a>
-      <a href="/admin/admin-requests"   class="sidebar-link"><i class="fas fa-user-shield"></i><span>Admin Requests</span></a>
-      <a href="/admin/unverified-users" class="sidebar-link" style="position:relative;">
-        <i class="fas fa-user-clock"></i>
-        <span>Unverified Users</span>
-        <% if (typeof unverifiedCount !== 'undefined' && unverifiedCount > 0) { %>
-          <span style="margin-left:auto;background:#ef4444;color:#fff;border-radius:20px;
-                       padding:1px 8px;font-size:0.7rem;font-weight:700;flex-shrink:0;">
-            <%= unverifiedCount %>
-          </span>
-        <% } %>
-      </a>
-      <a href="/admin/projects"  class="sidebar-link"><i class="fas fa-briefcase"></i><span>All Projects</span></a>
-      <a href="/messages"        class="sidebar-link"><i class="fas fa-comments"></i><span>Messages</span></a>
-      <a href="/admin/payments"  class="sidebar-link"><i class="fas fa-money-bill-wave"></i><span>Payments</span></a>
-      <a href="/notifications"   class="sidebar-link"><i class="fas fa-bell"></i><span>Notifications</span></a>
-      <a href="/admin/settings"  class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+    <% if (currentUser.role === 'admin') { 
+        const canUsers      = typeof hasPermission === 'function' ? hasPermission('manageUsers') : true;
+        const canProjects   = typeof hasPermission === 'function' ? hasPermission('manageProjects') : true;
+        const canPayments   = typeof hasPermission === 'function' ? hasPermission('managePayments') : true;
+        const canUnverified = typeof hasPermission === 'function' ? hasPermission('manageUnverified') : true;
+        const canSettings   = typeof hasPermission === 'function' ? hasPermission('manageSettings') : true;
+        const canMessages   = typeof hasPermission === 'function' ? hasPermission('accessMessages') : true;
+        const isSuper       = typeof isSuperAdmin !== 'undefined' ? isSuperAdmin : false;
+    %>
+      <a href="/admin/dashboard" class="sidebar-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+      
+      <% if (canUsers) { %>
+        <a href="/admin/users" class="sidebar-link"><i class="fas fa-users"></i><span>Manage Users</span></a>
+      <% } %>
+
+      <% if (isSuper) { %>
+        <a href="/admin/admin-requests" class="sidebar-link"><i class="fas fa-user-shield"></i><span>Team & Roles</span></a>
+      <% } %>
+
+      <% if (canUnverified) { %>
+        <a href="/admin/unverified-users" class="sidebar-link" style="position:relative;">
+          <i class="fas fa-user-clock"></i>
+          <span>Unverified Users</span>
+          <% if (typeof unverifiedCount !== 'undefined' && unverifiedCount > 0) { %>
+            <span style="margin-left:auto;background:#ef4444;color:#fff;border-radius:20px;
+                         padding:1px 8px;font-size:0.7rem;font-weight:700;flex-shrink:0;">
+              <%= unverifiedCount %>
+            </span>
+          <% } %>
+        </a>
+      <% } %>
+
+      <% if (canProjects) { %>
+        <a href="/admin/projects" class="sidebar-link"><i class="fas fa-briefcase"></i><span>All Projects</span></a>
+      <% } %>
+
+      <% if (canMessages) { %>
+        <a href="/messages" class="sidebar-link"><i class="fas fa-comments"></i><span>Messages</span></a>
+      <% } %>
+
+      <% if (canPayments) { %>
+        <a href="/admin/payments" class="sidebar-link"><i class="fas fa-money-bill-wave"></i><span>Payments</span></a>
+      <% } %>
+
+      <a href="/notifications" class="sidebar-link"><i class="fas fa-bell"></i><span>Notifications</span></a>
+
+      <% if (canSettings) { %>
+        <a href="/admin/settings" class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+      <% } %>
+
     <% } else if (currentUser.role === 'client') { %>
       <a href="/client/dashboard"       class="sidebar-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
       <a href="/client/post-project"    class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Post Project</span></a>

@@ -18,24 +18,40 @@
     <main class="main-content">
       <div class="page-header">
         <div>
-          <h1 class="page-title"><i class="fas fa-user-shield"></i> Admin Authorization Requests</h1>
-          <p class="page-subtitle">Manage administrative privileges and review new admin registrations</p>
+          <h1 class="page-title"><i class="fas fa-user-shield" style="color:var(--primary);"></i> Team & Manager Roles</h1>
+          <p class="page-subtitle">Super Admin control center: Delegate permissions & assign managers</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="openPromoteModal()" style="display:inline-flex;align-items:center;gap:8px;">
+            <i class="fas fa-user-plus"></i> Promote User to Manager
+          </button>
         </div>
       </div>
 
+      <!-- Quick Guidance Banner -->
+      <div style="background:var(--secondary);border:1px solid var(--border);border-left:4px solid var(--primary);padding:14px 18px;border-radius:10px;margin-bottom:24px;">
+        <div style="font-weight:700;color:var(--text-primary);font-size:0.95rem;margin-bottom:4px;">
+          <i class="fas fa-info-circle" style="color:var(--primary);margin-right:6px;"></i> Role & Permission Control
+        </div>
+        <div style="color:var(--text-secondary);font-size:0.86rem;line-height:1.5;">
+          Super Admin kisi bhi regular user (Client ya Freelancer) ko <strong>Manager / Sub-Admin</strong> bana sakta hai. Har Manager ko sirf wahi features aur dashboard sections milenge jo aap yahan enable karenge.
+        </div>
+      </div>
+
+      <!-- Administrators & Managers Table -->
       <div class="table-card">
-        <div class="table-header">
-          <h3>Administrators & Approval Requests (<%= admins.length %>)</h3>
+        <div class="table-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <h3>Administrative Team (<%= admins.length %>)</h3>
         </div>
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Administrator</th>
+                <th>Administrator / Manager</th>
                 <th>Email</th>
-                <th>Role</th>
+                <th>Role Tier</th>
+                <th>Assigned Features / Permissions</th>
                 <th>Status</th>
-                <th>Registered</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -45,7 +61,10 @@
                   <td colspan="6" class="empty-state">No administrators found</td>
                 </tr>
               <% } %>
-              <% admins.forEach(admin => { %>
+              <% admins.forEach(admin => { 
+                  const isSuper = Boolean(admin.isSuperAdmin || admin.email === 'fileshare1813@gmail.com' || admin.adminRole === 'super_admin');
+                  const p = admin.adminPermissions || {};
+              %>
                 <tr>
                   <td>
                     <div class="user-cell">
@@ -53,45 +72,86 @@
                            class="table-avatar" alt="<%= admin.name %>" onerror="this.src='/images/default-avatar.png'">
                       <div>
                         <strong><%= admin.name %></strong>
-                        <% if (admin.email === 'fileshare1813@gmail.com') { %>
-                          <span style="background:linear-gradient(135deg,#6c63ff,#764ba2);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:10px;font-weight:700;margin-left:4px;">SUPER ADMIN</span>
+                        <% if (isSuper) { %>
+                          <span class="role-superadmin" style="font-size:0.65rem;padding:2px 7px;border-radius:10px;margin-left:4px;">SUPER ADMIN</span>
+                        <% } else { %>
+                          <span class="role-manager" style="font-size:0.65rem;padding:2px 7px;border-radius:10px;margin-left:4px;">MANAGER</span>
                         <% } %>
                       </div>
                     </div>
                   </td>
                   <td><%= admin.email %></td>
-                  <td><span class="badge role-admin">admin</span></td>
                   <td>
-                    <% if (admin.adminApproved) { %>
-                      <span class="badge" style="background:rgba(34,197,94,0.15);color:var(--success);border:1px solid rgba(34,197,94,0.3);">
-                        <i class="fas fa-check-circle"></i> Approved
+                    <% if (isSuper) { %>
+                      <span class="badge" style="background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.3);font-weight:700;">
+                        Full Access (Super)
                       </span>
                     <% } else { %>
-                      <span class="badge" style="background:rgba(245,158,11,0.15);color:var(--warning);border:1px solid rgba(245,158,11,0.3);">
+                      <span class="badge" style="background:rgba(2,132,199,0.15);color:#0284c7;border:1px solid rgba(2,132,199,0.3);font-weight:700;">
+                        Custom Manager
+                      </span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (isSuper) { %>
+                      <span style="font-size:0.82rem;font-weight:700;color:var(--success);">
+                        <i class="fas fa-unlock-alt"></i> All Features Unlocked
+                      </span>
+                    <% } else { %>
+                      <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:320px;">
+                        <span class="badge-perm <%= p.manageUsers ? '' : 'disabled' %>">👥 Users</span>
+                        <span class="badge-perm <%= p.manageProjects ? '' : 'disabled' %>">📁 Projects</span>
+                        <span class="badge-perm <%= p.managePayments ? '' : 'disabled' %>">💳 Payments</span>
+                        <span class="badge-perm <%= p.manageUnverified ? '' : 'disabled' %>">⏱️ Unverified</span>
+                        <span class="badge-perm <%= p.viewAnalytics ? '' : 'disabled' %>">📊 Analytics</span>
+                        <span class="badge-perm <%= p.accessMessages ? '' : 'disabled' %>">💬 Messages</span>
+                        <span class="badge-perm <%= p.manageSettings ? '' : 'disabled' %>">⚙️ Settings</span>
+                      </div>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (admin.adminApproved) { %>
+                      <span class="badge badge-success">
+                        <i class="fas fa-check-circle"></i> Active
+                      </span>
+                    <% } else { %>
+                      <span class="badge badge-warning">
                         <i class="fas fa-clock"></i> Pending Review
                       </span>
                     <% } %>
                   </td>
-                  <td><%= new Date(admin.createdAt).toLocaleDateString('en-IN') %></td>
                   <td>
-                    <div class="action-btns">
-                      <% if (admin.email === 'fileshare1813@gmail.com') { %>
-                        <span style="font-size:0.8rem;color:var(--text-muted);font-weight:600;"><i class="fas fa-lock"></i> Protected</span>
-                      <% } else if (!admin.adminApproved) { %>
-                        <form action="/admin/admin-requests/<%= admin._id %>/approve" method="POST" style="display:inline;">
-                          <button type="submit" class="btn btn-sm btn-primary" title="Approve Admin Access">
-                            <i class="fas fa-check"></i> Approve
-                          </button>
-                        </form>
-                        <form action="/admin/admin-requests/<%= admin._id %>/reject" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to reject and delete this admin request?')">
-                          <button type="submit" class="btn btn-sm btn-danger" title="Reject Request">
-                            <i class="fas fa-times"></i> Reject
-                          </button>
-                        </form>
+                    <div class="action-btns" style="display:flex;gap:6px;align-items:center;">
+                      <% if (isSuper) { %>
+                        <span style="font-size:0.8rem;color:var(--text-muted);font-weight:600;"><i class="fas fa-lock"></i> Master Key</span>
                       <% } else { %>
-                        <form action="/admin/admin-requests/<%= admin._id %>/reject" method="POST" style="display:inline;" onsubmit="return confirm('Revoke admin access for this user?')">
-                          <button type="submit" class="btn btn-sm btn-danger" title="Revoke Admin Access">
-                            <i class="fas fa-user-slash"></i> Revoke
+                        <!-- Edit Permissions button -->
+                        <button type="button" class="btn btn-sm btn-outline"
+                          onclick="openEditPermsModal('<%= admin._id %>', '<%= admin.name.replace(/'/g, '') %>', <%= JSON.stringify(admin.adminPermissions || {}) %>)"
+                          title="Configure Features & Permissions">
+                          <i class="fas fa-sliders-h"></i> Permissions
+                        </button>
+
+                        <% if (!admin.adminApproved) { %>
+                          <form action="/admin/admin-requests/<%= admin._id %>/approve" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-success" title="Approve Access">
+                              <i class="fas fa-check"></i>
+                            </button>
+                          </form>
+                        <% } %>
+
+                        <!-- Demote back to client/freelancer -->
+                        <form action="/admin/team/demote/<%= admin._id %>" method="POST" style="display:inline;" onsubmit="return confirm('Demote Manager back to Client?')">
+                          <input type="hidden" name="role" value="client">
+                          <button type="submit" class="btn btn-sm btn-warning" title="Demote to Regular User">
+                            <i class="fas fa-user-minus"></i> Demote
+                          </button>
+                        </form>
+
+                        <!-- Revoke/Delete -->
+                        <form action="/admin/admin-requests/<%= admin._id %>/reject" method="POST" style="display:inline;" onsubmit="return confirm('Remove account permanently?')">
+                          <button type="submit" class="btn btn-sm btn-danger" title="Remove User">
+                            <i class="fas fa-trash"></i>
                           </button>
                         </form>
                       <% } %>
@@ -105,6 +165,176 @@
       </div>
     </main>
   </div>
+
+  <!-- ================================================================
+       MODAL 1: PROMOTE ANY USER TO MANAGER
+       ================================================================ -->
+  <div class="modal-overlay" id="promoteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:540px;width:100%;padding:26px;box-shadow:0 24px 48px rgba(0,0,0,0.5);max-height:92vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <h3 style="margin:0;font-size:1.2rem;display:flex;align-items:center;gap:10px;color:var(--text-primary);">
+          <i class="fas fa-user-shield" style="color:var(--primary);"></i> Promote User to Manager
+        </h3>
+        <button type="button" onclick="closePromoteModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="promoteForm" method="POST">
+        <div style="margin-bottom:18px;">
+          <label style="display:block;font-size:0.82rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">
+            Select Registered User
+          </label>
+          <select id="promoteUserSelect" class="form-input" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);" required onchange="updatePromoteAction(this.value)">
+            <option value="">-- Choose User --</option>
+            <% if (typeof eligibleUsers !== 'undefined') { %>
+              <% eligibleUsers.forEach(u => { %>
+                <option value="<%= u._id %>"><%= u.name %> (<%= u.email %>) [<%= u.role %>]</option>
+              <% }) %>
+            <% } %>
+          </select>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:0.82rem;font-weight:700;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;">
+            Select Manager Features & Permissions
+          </label>
+          
+          <div style="display:flex;flex-direction:column;gap:10px;background:var(--secondary);padding:14px;border-radius:10px;border:1px solid var(--border);">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="manageUsers" style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>👥 Manage Users</strong> — View user list, ban/unban, reset password</span>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="manageProjects" checked style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>📁 Manage Projects</strong> — View open projects, review milestone deliverables</span>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="managePayments" style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>💳 Payments & Escrow</strong> — View platform transaction ledger & release escrow</span>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="manageUnverified" style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>⏱️ Unverified Users</strong> — View unverified list & trigger verification actions</span>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="viewAnalytics" checked style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>📊 Analytics & Charts</strong> — View platform growth, graphs & statistics</span>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="accessMessages" checked style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>💬 Support Chat</strong> — Access messages to resolve user disputes</span>
+            </label>
+
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+              <input type="checkbox" name="manageSettings" style="width:18px;height:18px;accent-color:var(--primary);">
+              <span><strong>⚙️ Platform Settings</strong> — Update platform configuration & operational toggles</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button type="button" onclick="closePromoteModal()" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Assign Manager Role</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL 2: EDIT MANAGER PERMISSIONS
+       ================================================================ -->
+  <div class="modal-overlay" id="editPermsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:540px;width:100%;padding:26px;box-shadow:0 24px 48px rgba(0,0,0,0.5);max-height:92vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <h3 style="margin:0;font-size:1.2rem;display:flex;align-items:center;gap:10px;color:var(--text-primary);">
+          <i class="fas fa-sliders-h" style="color:var(--primary);"></i> Edit Manager Permissions
+        </h3>
+        <button type="button" onclick="closeEditPermsModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;">&times;</button>
+      </div>
+
+      <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:16px;">
+        Modifying access controls for: <strong id="editTargetName" style="color:var(--text-primary);"></strong>
+      </p>
+
+      <form id="editPermsForm" method="POST">
+        <div style="display:flex;flex-direction:column;gap:10px;background:var(--secondary);padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="manageUsers" id="perm_manageUsers" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>👥 Manage Users</strong> — View user list, ban/unban, reset password</span>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="manageProjects" id="perm_manageProjects" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>📁 Manage Projects</strong> — View open projects, review milestone deliverables</span>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="managePayments" id="perm_managePayments" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>💳 Payments & Escrow</strong> — View platform transaction ledger & release escrow</span>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="manageUnverified" id="perm_manageUnverified" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>⏱️ Unverified Users</strong> — View unverified list & trigger verification actions</span>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="viewAnalytics" id="perm_viewAnalytics" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>📊 Analytics & Charts</strong> — View platform growth, graphs & statistics</span>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="accessMessages" id="perm_accessMessages" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>💬 Support Chat</strong> — Access messages to resolve user disputes</span>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;color:var(--text-primary);">
+            <input type="checkbox" name="manageSettings" id="perm_manageSettings" style="width:18px;height:18px;accent-color:var(--primary);">
+            <span><strong>⚙️ Platform Settings</strong> — Update platform configuration & operational toggles</span>
+          </label>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button type="button" onclick="closeEditPermsModal()" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Permissions</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openPromoteModal() {
+      document.getElementById('promoteModal').style.display = 'flex';
+    }
+    function closePromoteModal() {
+      document.getElementById('promoteModal').style.display = 'none';
+    }
+    function updatePromoteAction(userId) {
+      if (userId) {
+        document.getElementById('promoteForm').action = '/admin/team/promote/' + userId;
+      }
+    }
+
+    function openEditPermsModal(adminId, name, perms) {
+      document.getElementById('editTargetName').textContent = name;
+      document.getElementById('editPermsForm').action = '/admin/team/permissions/' + adminId;
+      
+      const keys = ['manageUsers', 'manageProjects', 'managePayments', 'manageUnverified', 'viewAnalytics', 'accessMessages', 'manageSettings'];
+      keys.forEach(k => {
+        const el = document.getElementById('perm_' + k);
+        if (el) el.checked = Boolean(perms && perms[k]);
+      });
+
+      document.getElementById('editPermsModal').style.display = 'flex';
+    }
+    function closeEditPermsModal() {
+      document.getElementById('editPermsModal').style.display = 'none';
+    }
+  </script>
 
   <script src="/js/main.js"></script>
   <script src="/js/notifications.js"></script>

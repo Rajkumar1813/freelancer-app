@@ -16,45 +16,61 @@
   <div class="app-layout">
     <%- include('../partials/sidebar') %>
     <main class="main-content chat-main">
-      <div class="chat-layout">
+      <div class="chat-layout <%= activeConversation ? 'chat-view-active' : 'list-view-active' %>">
 
         <!-- ===== LEFT: Conversations List ===== -->
         <div class="chat-sidebar">
           <div class="chat-sidebar-header">
-            <h3>Messages</h3>
-            <span class="conv-count"><%= conversations.length %></span>
+            <div class="chat-sidebar-title">
+              <h3><i class="fas fa-comment-dots"></i> Messages</h3>
+              <span class="conv-count"><%= conversations.length %></span>
+            </div>
+            <div class="conv-search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="convSearchInput" placeholder="Search conversations..." autocomplete="off">
+            </div>
           </div>
-          <div class="conv-list">
+          <div class="conv-list" id="convList">
             <% if (conversations.length === 0) { %>
               <div class="conv-empty">
-                <i class="fas fa-comment-slash"></i>
-                <p>No conversations yet</p>
+                <div class="conv-empty-icon"><i class="fas fa-comments"></i></div>
+                <h4>No conversations yet</h4>
+                <p>When you message clients or freelancers, your chats will appear here.</p>
               </div>
             <% } %>
             <% conversations.forEach(conv => {
                 const isActive = activeConversation && activeConversation._id.toString() === conv._id.toString();
+                const oUser = conv.otherUser;
+                const avatar = oUser && oUser.googleAvatar ? oUser.googleAvatar : (oUser ? '/avatar/' + oUser._id : '/images/default-avatar.png');
             %>
             <a href="/messages/<%= conv._id %>"
-              class="conv-item <%= isActive ? 'conv-active' : '' %>">
+              class="conv-item <%= isActive ? 'conv-active' : '' %>"
+              data-name="<%= oUser ? oUser.name.toLowerCase() : '' %>">
               <div class="conv-avatar-wrap">
                 <img
-                  src="<%= conv.otherUser && conv.otherUser.googleAvatar ? conv.otherUser.googleAvatar : (conv.otherUser ? '/avatar/' + conv.otherUser._id : '/images/default-avatar.png') %>"
+                  src="<%= avatar %>"
                   class="conv-avatar"
+                  alt="<%= oUser ? oUser.name : 'User' %>"
                   onerror="this.src='/images/default-avatar.png'">
+                <span class="conv-online-dot"></span>
               </div>
               <div class="conv-info">
-                <div class="conv-name"><%= conv.otherUser ? conv.otherUser.name : 'Unknown' %></div>
-                <div class="conv-role"><%= conv.otherUser ? conv.otherUser.role : '' %></div>
+                <div class="conv-name-row">
+                  <span class="conv-name"><%= oUser ? oUser.name : 'Unknown' %></span>
+                  <span class="conv-time">
+                    <% if (conv.updatedAt) { %>
+                      <%= new Date(conv.updatedAt).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) %>
+                    <% } %>
+                  </span>
+                </div>
+                <div class="conv-role-row">
+                  <span class="conv-role badge role-<%= oUser ? oUser.role : '' %>"><%= oUser ? oUser.role : '' %></span>
+                </div>
                 <div class="conv-last-msg">
                   <%= conv.lastMessage && conv.lastMessage.content
-                      ? conv.lastMessage.content.substring(0,35) + (conv.lastMessage.content.length > 35 ? '...' : '')
+                      ? conv.lastMessage.content.substring(0,38) + (conv.lastMessage.content.length > 38 ? '...' : '')
                       : 'Start a conversation...' %>
                 </div>
-              </div>
-              <div class="conv-time">
-                <% if (conv.updatedAt) { %>
-                  <%= new Date(conv.updatedAt).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) %>
-                <% } %>
               </div>
             </a>
             <% }) %>
@@ -65,23 +81,49 @@
         <div class="chat-window">
           <% if (!activeConversation) { %>
             <div class="chat-empty">
-              <i class="fas fa-comments fa-4x"></i>
-              <h3>Select a conversation</h3>
-              <p>Choose from the list to start chatting</p>
+              <div class="chat-empty-art">
+                <i class="fas fa-paper-plane"></i>
+              </div>
+              <h3>Select a Conversation</h3>
+              <p>Choose any conversation from the list to view history and start collaborating in real time.</p>
             </div>
           <% } else { %>
             <!-- Chat Header -->
             <div class="chat-header">
-              <img
-                src="<%= otherUser && otherUser.googleAvatar ? otherUser.googleAvatar : (otherUser ? '/avatar/'+otherUser._id : '/images/default-avatar.png') %>"
-                class="chat-header-avatar"
-                onerror="this.src='/images/default-avatar.png'">
-              <div>
-                <div class="chat-header-name"><%= otherUser ? otherUser.name : 'User' %></div>
-                <div class="chat-header-role"><%= otherUser ? otherUser.role : '' %></div>
+              <a href="/messages" class="chat-back-btn" title="Back to conversations">
+                <i class="fas fa-arrow-left"></i>
+                <span class="back-label">Messages</span>
+              </a>
+              <div class="chat-header-user">
+                <div class="chat-header-avatar-wrap">
+                  <img
+                    src="<%= otherUser && otherUser.googleAvatar ? otherUser.googleAvatar : (otherUser ? '/avatar/'+otherUser._id : '/images/default-avatar.png') %>"
+                    class="chat-header-avatar"
+                    alt="<%= otherUser ? otherUser.name : 'User' %>"
+                    onerror="this.src='/images/default-avatar.png'">
+                  <span class="header-online-dot"></span>
+                </div>
+                <div class="chat-header-meta">
+                  <div class="chat-header-name">
+                    <span><%= otherUser ? otherUser.name : 'User' %></span>
+                    <% if (otherUser && otherUser.role) { %>
+                      <span class="badge role-<%= otherUser.role %>"><%= otherUser.role %></span>
+                    <% } %>
+                  </div>
+                  <div class="chat-header-sub" id="chatStatusText">Active on FreelanceHub</div>
+                </div>
               </div>
-              <div class="typing-indicator" id="typingIndicator" style="display:none">
-                <span></span><span></span><span></span>
+
+              <div class="chat-header-actions">
+                <div class="typing-indicator" id="typingIndicator" style="display:none">
+                  <span></span><span></span><span></span>
+                </div>
+                <% if (otherUser) { %>
+                  <a href="/profile/<%= otherUser._id %>" class="chat-action-btn" title="View Profile">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="action-btn-text">Profile</span>
+                  </a>
+                <% } %>
               </div>
             </div>
 
@@ -89,8 +131,9 @@
             <div class="messages-wrap" id="messagesWrap">
               <% if (messages.length === 0) { %>
                 <div class="chat-start-hint">
-                  <i class="fas fa-hand-wave"></i>
-                  Say hello to <strong><%= otherUser ? otherUser.name : 'User' %></strong>!
+                  <div class="hint-icon"><i class="fas fa-handshake"></i></div>
+                  <h4>Say hello to <%= otherUser ? otherUser.name : 'User' %>!</h4>
+                  <p>Send a message below to start coordinating deliverables and updates.</p>
                 </div>
               <% } %>
               <% messages.forEach(function(msg) {
@@ -104,11 +147,16 @@
                 data-msg-id="<%= msg._id %>">
                 <% if (!isOwn) { %>
                   <img src="<%= senderAvatar %>" class="msg-avatar"
-                    onerror="this.src='/images/default-avatar.png'">
+                    onerror="this.src='/images/default-avatar.png'" alt="avatar">
                 <% } %>
                 <div class="message-bubble">
                   <div class="message-text"><%= msg.content %></div>
-                  <div class="message-time"><%= msgTime %></div>
+                  <div class="message-meta">
+                    <span class="message-time"><%= msgTime %></span>
+                    <% if (isOwn) { %>
+                      <span class="msg-check"><i class="fas fa-check-double"></i></span>
+                    <% } %>
+                  </div>
                 </div>
               </div>
               <% }) %>
@@ -125,7 +173,7 @@
                   autocomplete="off"
                   value="<%= typeof initMsg !== 'undefined' && initMsg ? initMsg : '' %>"
                   maxlength="2000">
-                <button type="button" id="sendBtn" class="send-btn" onclick="document.getElementById('messageForm').dispatchEvent(new Event('submit'))">
+                <button type="button" id="sendBtn" class="send-btn" aria-label="Send message" onclick="document.getElementById('messageForm').dispatchEvent(new Event('submit'))">
                   <i class="fas fa-paper-plane"></i>
                 </button>
               </form>

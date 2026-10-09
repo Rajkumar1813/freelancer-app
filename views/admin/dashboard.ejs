@@ -16,120 +16,174 @@
   <div class="app-layout">
     <%- include('../partials/sidebar') %>
     <main class="main-content">
+      <%
+        const canUsers     = typeof hasPermission === 'function' ? hasPermission('manageUsers') : true;
+        const canProjects  = typeof hasPermission === 'function' ? hasPermission('manageProjects') : true;
+        const canPayments  = typeof hasPermission === 'function' ? hasPermission('managePayments') : true;
+        const canAnalytics = typeof hasPermission === 'function' ? hasPermission('viewAnalytics') : true;
+        const isSuper      = typeof isSuperAdmin !== 'undefined' ? isSuperAdmin : false;
+      %>
+
       <div class="page-header">
         <div>
-          <h1 class="page-title">Admin Dashboard</h1>
-          <p class="page-subtitle">Platform overview & analytics</p>
+          <h1 class="page-title"><%= isSuper ? 'Super Admin Dashboard' : 'Manager Dashboard' %></h1>
+          <p class="page-subtitle"><%= isSuper ? 'Complete platform command & analytics' : 'Authorized operational management console' %></p>
         </div>
         <div class="header-actions">
+          <% if (isSuper) { %>
+            <span class="live-badge" style="background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.3);"><i class="fas fa-crown"></i> Super Admin</span>
+          <% } else { %>
+            <span class="live-badge" style="background:rgba(2,132,199,0.15);color:#0284c7;border:1px solid rgba(2,132,199,0.3);"><i class="fas fa-shield-alt"></i> Manager Role</span>
+          <% } %>
           <span class="live-badge"><span class="live-dot"></span> Live</span>
         </div>
       </div>
 
+      <% if (!isSuper) { %>
+        <div style="background:var(--secondary);border:1px solid var(--border);border-left:4px solid #0284c7;padding:12px 18px;border-radius:10px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <strong style="color:var(--text-primary);font-size:0.92rem;"><i class="fas fa-user-lock" style="color:#0284c7;margin-right:6px;"></i> Active Permissions:</strong>
+            <span style="display:inline-flex;gap:6px;flex-wrap:wrap;margin-left:8px;">
+              <% if (canUsers) { %><span class="badge-perm">👥 Users</span><% } %>
+              <% if (canProjects) { %><span class="badge-perm">📁 Projects</span><% } %>
+              <% if (canPayments) { %><span class="badge-perm">💳 Payments</span><% } %>
+              <% if (canAnalytics) { %><span class="badge-perm">📊 Analytics</span><% } %>
+            </span>
+          </div>
+          <small style="color:var(--text-muted);">Configured by Super Admin</small>
+        </div>
+      <% } %>
+
       <!-- Stats Cards -->
       <div class="stats-grid">
-        <div class="stat-card stat-blue">
-          <div class="stat-icon"><i class="fas fa-users"></i></div>
-          <div class="stat-info">
-            <div class="stat-value"><%= stats.totalUsers %></div>
-            <div class="stat-label">Total Users</div>
+        <% if (isSuper || canUsers) { %>
+          <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-info">
+              <div class="stat-value"><%= stats.totalUsers %></div>
+              <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-sub"><%= stats.totalClients %> clients · <%= stats.totalFreelancers %> freelancers</div>
           </div>
-          <div class="stat-sub"><%= stats.totalClients %> clients · <%= stats.totalFreelancers %> freelancers</div>
-        </div>
-        <div class="stat-card stat-green">
-          <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
-          <div class="stat-info">
-            <div class="stat-value"><%= stats.totalProjects %></div>
-            <div class="stat-label">Total Projects</div>
+        <% } %>
+
+        <% if (isSuper || canProjects) { %>
+          <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
+            <div class="stat-info">
+              <div class="stat-value"><%= stats.totalProjects %></div>
+              <div class="stat-label">Total Projects</div>
+            </div>
+            <div class="stat-sub"><%= stats.openProjects %> open · <%= stats.completedProjects %> done</div>
           </div>
-          <div class="stat-sub"><%= stats.openProjects %> open · <%= stats.completedProjects %> done</div>
-        </div>
-        <div class="stat-card stat-purple">
-          <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
-          <div class="stat-info">
-            <div class="stat-value">₹<%= (stats.totalRevenue || 0).toLocaleString('en-IN') %></div>
-            <div class="stat-label">Total Revenue</div>
+        <% } %>
+
+        <% if (isSuper || canPayments) { %>
+          <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">₹<%= (stats.totalRevenue || 0).toLocaleString('en-IN') %></div>
+              <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-sub">From completed projects</div>
           </div>
-          <div class="stat-sub">From completed projects</div>
-        </div>
-        <div class="stat-card stat-orange">
-          <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-          <div class="stat-info">
-            <div class="stat-value"><%= stats.openProjects %></div>
-            <div class="stat-label">Active Projects</div>
+        <% } %>
+
+        <% if (isSuper || canProjects) { %>
+          <div class="stat-card stat-orange">
+            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-info">
+              <div class="stat-value"><%= stats.openProjects %></div>
+              <div class="stat-label">Active Projects</div>
+            </div>
+            <div class="stat-sub">Currently in progress</div>
           </div>
-          <div class="stat-sub">Currently in progress</div>
-        </div>
+        <% } %>
       </div>
 
       <!-- Charts -->
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>Project Activity</h3>
-            <span class="chart-badge">Last 6 months</span>
-          </div>
-          <canvas id="projectChart" height="120"></canvas>
+      <% if (isSuper || canAnalytics) { %>
+        <div class="charts-grid">
+          <% if (isSuper || canProjects) { %>
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>Project Activity</h3>
+                <span class="chart-badge">Last 6 months</span>
+              </div>
+              <canvas id="projectChart" height="120"></canvas>
+            </div>
+          <% } %>
+
+          <% if (isSuper || canPayments) { %>
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>Revenue Trend</h3>
+                <span class="chart-badge">Last 6 months</span>
+              </div>
+              <canvas id="revenueChart" height="120"></canvas>
+            </div>
+          <% } %>
+
+          <% if (isSuper || canUsers) { %>
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3>User Growth</h3>
+                <span class="chart-badge">New registrations</span>
+              </div>
+              <canvas id="userChart" height="120"></canvas>
+            </div>
+          <% } %>
         </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>Revenue Trend</h3>
-            <span class="chart-badge">Last 6 months</span>
-          </div>
-          <canvas id="revenueChart" height="120"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>User Growth</h3>
-            <span class="chart-badge">New registrations</span>
-          </div>
-          <canvas id="userChart" height="120"></canvas>
-        </div>
-      </div>
+      <% } %>
 
       <!-- Recent Data -->
       <div class="tables-grid">
-        <div class="table-card">
-          <div class="table-header">
-            <h3>Recent Users</h3>
-            <a href="/admin/users" class="view-all">View all →</a>
+        <% if (isSuper || canUsers) { %>
+          <div class="table-card">
+            <div class="table-header">
+              <h3>Recent Users</h3>
+              <a href="/admin/users" class="view-all">View all →</a>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Role</th><th>Joined</th><th>Status</th></tr></thead>
+              <tbody>
+                <% recentUsers.forEach(u => { %>
+                  <tr>
+                    <td><div class="user-cell">
+                      <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="table-avatar" onerror="this.src='/images/default-avatar.png'">
+                      <%= u.name %>
+                    </div></td>
+                    <td><span class="badge role-<%= u.role %>"><%= u.role %></span></td>
+                    <td><%= new Date(u.createdAt).toLocaleDateString('en-IN') %></td>
+                    <td><span class="badge <%= u.isBanned ? 'badge-danger' : 'badge-success' %>"><%= u.isBanned ? 'Banned' : 'Active' %></span></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
           </div>
-          <table class="data-table">
-            <thead><tr><th>Name</th><th>Role</th><th>Joined</th><th>Status</th></tr></thead>
-            <tbody>
-              <% recentUsers.forEach(u => { %>
-                <tr>
-                  <td><div class="user-cell">
-                    <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="table-avatar" onerror="this.src='/images/default-avatar.png'">
-                    <%= u.name %>
-                  </div></td>
-                  <td><span class="badge role-<%= u.role %>"><%= u.role %></span></td>
-                  <td><%= new Date(u.createdAt).toLocaleDateString('en-IN') %></td>
-                  <td><span class="badge <%= u.isBanned ? 'badge-danger' : 'badge-success' %>"><%= u.isBanned ? 'Banned' : 'Active' %></span></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-card">
-          <div class="table-header">
-            <h3>Recent Projects</h3>
-            <a href="/admin/projects" class="view-all">View all →</a>
+        <% } %>
+
+        <% if (isSuper || canProjects) { %>
+          <div class="table-card">
+            <div class="table-header">
+              <h3>Recent Projects</h3>
+              <a href="/admin/projects" class="view-all">View all →</a>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Title</th><th>Client</th><th>Budget</th><th>Status</th></tr></thead>
+              <tbody>
+                <% recentProjects.forEach(p => { %>
+                  <tr>
+                    <td class="project-title-cell"><%= p.title.substring(0,30) %><%= p.title.length > 30 ? '...' : '' %></td>
+                    <td><%= p.client?.name || 'N/A' %></td>
+                    <td>₹<%= (p.budget || 0).toLocaleString('en-IN') %></td>
+                    <td><span class="badge status-<%= p.status %>"><%= p.status.replace('_',' ') %></span></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
           </div>
-          <table class="data-table">
-            <thead><tr><th>Title</th><th>Client</th><th>Budget</th><th>Status</th></tr></thead>
-            <tbody>
-              <% recentProjects.forEach(p => { %>
-                <tr>
-                  <td class="project-title-cell"><%= p.title.substring(0,30) %><%= p.title.length > 30 ? '...' : '' %></td>
-                  <td><%= p.client?.name || 'N/A' %></td>
-                  <td>₹<%= (p.budget || 0).toLocaleString('en-IN') %></td>
-                  <td><span class="badge status-<%= p.status %>"><%= p.status.replace('_',' ') %></span></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
+        <% } %>
       </div>
     </main>
   </div>

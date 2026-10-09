@@ -189,6 +189,25 @@
     return d.innerHTML;
   }
 
+  // ===== SEARCH CONVERSATIONS =====
+  const convSearch = document.getElementById('convSearchInput');
+  if (convSearch) {
+    convSearch.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('.conv-item').forEach(item => {
+        const name = item.getAttribute('data-name') || '';
+        item.style.display = name.includes(q) ? 'flex' : 'none';
+      });
+    });
+  }
+
+  // ===== AUTO SCROLL ON FOCUS (Mobile virtual keyboard) =====
+  if (messageInput) {
+    messageInput.addEventListener('focus', () => {
+      setTimeout(() => scrollToBottom(true), 250);
+    });
+  }
+
   // ===== AUTO-SEND INIT MESSAGE (from "message about project" flow) =====
   if (messageInput && messageInput.value.trim()) {
     setTimeout(sendMessage, 600);

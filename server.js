@@ -113,6 +113,18 @@ app.use(async (req, res, next) => {
     } catch (e) { res.locals.unreadNotifications = 0; }
 
     if (req.user.role === 'admin') {
+      const isSuper = Boolean(
+        req.user.isSuperAdmin ||
+        req.user.email === 'fileshare1813@gmail.com' ||
+        req.user.adminRole === 'super_admin'
+      );
+      res.locals.isSuperAdmin = isSuper;
+      res.locals.adminPermissions = req.user.adminPermissions || {};
+      res.locals.hasPermission = (perm) => {
+        if (isSuper) return true;
+        return Boolean(req.user.adminPermissions && req.user.adminPermissions[perm]);
+      };
+
       try {
         const User = require('./models/User');
         res.locals.unverifiedCount = await User.countDocuments({
@@ -120,9 +132,15 @@ app.use(async (req, res, next) => {
         });
       } catch (e) { res.locals.unverifiedCount = 0; }
     } else {
+      res.locals.isSuperAdmin = false;
+      res.locals.adminPermissions = {};
+      res.locals.hasPermission = () => false;
       res.locals.unverifiedCount = 0;
     }
   } else {
+    res.locals.isSuperAdmin        = false;
+    res.locals.adminPermissions    = {};
+    res.locals.hasPermission       = () => false;
     res.locals.unreadNotifications = 0;
     res.locals.unverifiedCount     = 0;
   }

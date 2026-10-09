@@ -61,6 +61,19 @@ const userSchema = new mongoose.Schema({
   adminApproved: { type: Boolean, default: false },
   needsRoleSelection: { type: Boolean, default: false },
 
+  // Admin hierarchy & Granular Manager Permissions
+  isSuperAdmin: { type: Boolean, default: false },
+  adminRole: { type: String, enum: ['super_admin', 'manager', 'admin'], default: 'manager' },
+  adminPermissions: {
+    manageUsers:      { type: Boolean, default: false },
+    manageProjects:   { type: Boolean, default: false },
+    managePayments:   { type: Boolean, default: false },
+    manageUnverified: { type: Boolean, default: false },
+    viewAnalytics:    { type: Boolean, default: true  },
+    accessMessages:   { type: Boolean, default: true  },
+    manageSettings:   { type: Boolean, default: false }
+  },
+
   // Password reset
   resetPasswordToken: { type: String },
   resetPasswordExpiry: { type: Date },

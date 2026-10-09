@@ -1,35 +1,45 @@
 const express = require('express');
 const router  = express.Router();
-const { isAdmin } = require('../middleware/auth');
+const { isAdmin, requirePermission, isSuperAdminOnly } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
 const paymentCtrl     = require('../controllers/paymentController');
 
 router.use(isAdmin);
 
-// ── Existing routes (unchanged) ───────────────────────────────────────────────
+// ── Dashboard & Analytics ──────────────────────────────────────────────────
 router.get('/dashboard',          adminController.getDashboard);
-router.get('/users',                      adminController.getUsers);
-router.post('/users/:id/ban',             adminController.banUser);
-router.post('/users/:id/delete',          adminController.deleteUser);
-router.post('/users/:id/reset-password',   adminController.resetUserPassword);
-router.get('/projects',                   adminController.getProjects);
 router.get('/graph-data',         adminController.getGraphDataAPI);
 
-router.get('/settings', (req, res) => {
+// ── Users Management (Requires 'manageUsers' permission) ────────────────────
+router.get('/users',                    requirePermission('manageUsers'), adminController.getUsers);
+router.post('/users/:id/ban',           requirePermission('manageUsers'), adminController.banUser);
+router.post('/users/:id/delete',        requirePermission('manageUsers'), adminController.deleteUser);
+router.post('/users/:id/reset-password', requirePermission('manageUsers'), adminController.resetUserPassword);
+
+// ── Projects Management (Requires 'manageProjects' permission) ─────────────
+router.get('/projects',                 requirePermission('manageProjects'), adminController.getProjects);
+
+// ── Settings (Requires 'manageSettings' permission) ─────────────────────────
+router.get('/settings', requirePermission('manageSettings'), (req, res) => {
   res.render('admin/settings', { title: 'Platform Settings - FreelanceHub' });
 });
 
-router.get('/payments',               paymentCtrl.getAdminPayments);
-router.post('/payments/:id/release',  paymentCtrl.releasePayment);
-router.post('/payments/:id/complete', paymentCtrl.completePayment);
+// ── Payments Management (Requires 'managePayments' permission) ─────────────
+router.get('/payments',               requirePermission('managePayments'), paymentCtrl.getAdminPayments);
+router.post('/payments/:id/release',  requirePermission('managePayments'), paymentCtrl.releasePayment);
+router.post('/payments/:id/complete', requirePermission('managePayments'), paymentCtrl.completePayment);
 
-// ── Admin Authorization Requests ─────────────────────────────────────────────
-router.get('/admin-requests',              adminController.getAdminRequests);
-router.post('/admin-requests/:id/approve', adminController.approveAdminRequest);
-router.post('/admin-requests/:id/reject',  adminController.rejectAdminRequest);
+// ── Super Admin Team & Manager Delegation (Super Admin Only) ───────────────
+router.get('/admin-requests',              isSuperAdminOnly, adminController.getAdminRequests);
+router.get('/team',                        isSuperAdminOnly, adminController.getAdminRequests);
+router.post('/admin-requests/:id/approve', isSuperAdminOnly, adminController.approveAdminRequest);
+router.post('/admin-requests/:id/reject',  isSuperAdminOnly, adminController.rejectAdminRequest);
+router.post('/team/promote/:id',           isSuperAdminOnly, adminController.promoteToManager);
+router.post('/team/permissions/:id',       isSuperAdminOnly, adminController.updateManagerPermissions);
+router.post('/team/demote/:id',            isSuperAdminOnly, adminController.demoteManager);
 
-// ── NEW: Unverified users list ────────────────────────────────────────────────
-router.get('/unverified-users', async (req, res) => {
+// ── Unverified users list (Requires 'manageUnverified' permission) ─────────
+router.get('/unverified-users', requirePermission('manageUnverified'), async (req, res) => {
   try {
     const User = require('../models/User');
     const now  = new Date();

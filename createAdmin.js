@@ -14,14 +14,22 @@ async function createAdmin() {
 
     const existing = await User.findOne({ email: ADMIN_EMAIL });
     if (existing) {
-      if (existing.role !== 'admin') {
-        existing.role = 'admin';
-        existing.isVerified = true;
-        await existing.save();
-        console.log('✅ Existing user promoted to Admin!');
-      } else {
-        console.log('ℹ️  Admin already exists. Email:', ADMIN_EMAIL);
-      }
+      existing.role = 'admin';
+      existing.adminRole = 'super_admin';
+      existing.isSuperAdmin = true;
+      existing.adminApproved = true;
+      existing.isVerified = true;
+      existing.adminPermissions = {
+        manageUsers: true,
+        manageProjects: true,
+        managePayments: true,
+        manageUnverified: true,
+        viewAnalytics: true,
+        accessMessages: true,
+        manageSettings: true
+      };
+      await existing.save();
+      console.log('✅ Admin account updated with Super Admin privileges! Email:', ADMIN_EMAIL);
       process.exit(0);
     }
 
@@ -31,8 +39,20 @@ async function createAdmin() {
       email: ADMIN_EMAIL,
       password: hashed,
       role: 'admin',
+      adminRole: 'super_admin',
+      isSuperAdmin: true,
+      adminApproved: true,
       isVerified: true,
-      isActive: true
+      isActive: true,
+      adminPermissions: {
+        manageUsers: true,
+        manageProjects: true,
+        managePayments: true,
+        manageUnverified: true,
+        viewAnalytics: true,
+        accessMessages: true,
+        manageSettings: true
+      }
     });
 
     console.log('');
