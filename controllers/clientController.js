@@ -8,13 +8,15 @@ const { getIO } = require('../config/socket');
 
 exports.getDashboard = async (req, res) => {
   try {
-    const [activeProjects, completedProjects, totalProposals] = await Promise.all([
-      Project.countDocuments({ client: req.user._id, status: { $in: ['open', 'in_progress'] } }),
+    const [pendingProjects, inProgressProjects, completedProjects, totalProjects, totalProposals] = await Promise.all([
+      Project.countDocuments({ client: req.user._id, status: 'open' }),
+      Project.countDocuments({ client: req.user._id, status: 'in_progress' }),
       Project.countDocuments({ client: req.user._id, status: 'completed' }),
+      Project.countDocuments({ client: req.user._id }),
       Proposal.countDocuments({ project: { $in: await Project.find({ client: req.user._id }).distinct('_id') } })
     ]);
 
-    const recentProjects = await Project.find({ client: req.user._id }).sort({ createdAt: -1 }).limit(5);
+    const recentProjects = await Project.find({ client: req.user._id }).populate('hiredFreelancer', 'name').sort({ createdAt: -1 }).limit(5);
     const graphData = await getGraphData('client', req.user._id);
     const spentResult = await Project.aggregate([
       { $match: { client: req.user._id, status: 'completed' } },
@@ -23,7 +25,15 @@ exports.getDashboard = async (req, res) => {
 
     res.render('client/dashboard', {
       title: 'Client Dashboard - FreelanceHub',
-      stats: { activeProjects, completedProjects, totalProposals, totalSpent: spentResult[0]?.total || 0 },
+      stats: {
+        pendingProjects,
+        inProgressProjects,
+        completedProjects,
+        totalProjects,
+        activeProjects: pendingProjects + inProgressProjects,
+        totalProposals,
+        totalSpent: spentResult[0]?.total || 0
+      },
       recentProjects, graphData
     });
   } catch (err) {
@@ -75,9 +85,70 @@ exports.getMyProjects = async (req, res) => {
     let query = { client: req.user._id };
     if (status) query.status = status;
     const projects = await Project.find(query).populate('hiredFreelancer', 'name').sort(sort).lean();
-    res.render('client/my-projects', { title: 'My Projects - FreelanceHub', projects, filters: req.query });
+
+    // Counts for tabs/pills
+    const allUserProjects = await Project.find({ client: req.user._id }).select('status').lean();
+    const counts = {
+      all: allUserProjects.length,
+      open: allUserProjects.filter(p => p.status === 'open').length,
+      in_progress: allUserProjects.filter(p => p.status === 'in_progress').length,
+      completed: allUserProjects.filter(p => p.status === 'completed').length,
+      cancelled: allUserProjects.filter(p => p.status === 'cancelled').length
+    };
+
+    res.render('client/my-projects', { title: 'My Projects - FreelanceHub', projects, counts, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load projects');
+    res.redirect('/client/dashboard');
+  }
+};
+
+exports.getAllProposals = async (req, res) => {
+  try {
+    const { project: filterProjectId, status: filterStatus, sort = '-createdAt', search } = req.query;
+
+    const myProjects = await Project.find({ client: req.user._id }).sort({ createdAt: -1 }).lean();
+    const myProjectIds = myProjects.map(p => p._id);
+
+    let query = { project: { $in: myProjectIds } };
+    if (filterProjectId) query.project = filterProjectId;
+    if (filterStatus) query.status = filterStatus;
+
+    let proposals = await Proposal.find(query)
+      .populate('project', 'title budget budgetType status proposalCount priority deadline')
+      .populate('freelancer', 'name email skills rating reviewCount hourlyRate googleAvatar')
+      .sort(sort)
+      .lean();
+
+    if (search) {
+      const s = search.toLowerCase().trim();
+      proposals = proposals.filter(p =>
+        (p.freelancer?.name && p.freelancer.name.toLowerCase().includes(s)) ||
+        (p.project?.title && p.project.title.toLowerCase().includes(s)) ||
+        (p.coverLetter && p.coverLetter.toLowerCase().includes(s)) ||
+        (p.freelancer?.skills && p.freelancer.skills.some(sk => sk.toLowerCase().includes(s)))
+      );
+    }
+
+    // Counts across all proposals for client
+    const allProps = await Proposal.find({ project: { $in: myProjectIds } }).select('status').lean();
+    const stats = {
+      total: allProps.length,
+      pending: allProps.filter(p => p.status === 'pending').length,
+      accepted: allProps.filter(p => p.status === 'accepted').length,
+      rejected: allProps.filter(p => p.status === 'rejected').length
+    };
+
+    res.render('client/all-proposals', {
+      title: 'Project Proposals - FreelanceHub',
+      proposals,
+      projects: myProjects,
+      stats,
+      filters: req.query
+    });
+  } catch (err) {
+    console.error('[getAllProposals]', err);
+    req.flash('error', 'Failed to load proposals');
     res.redirect('/client/dashboard');
   }
 };
@@ -86,7 +157,7 @@ exports.getProjectProposals = async (req, res) => {
   try {
     const project = await Project.findOne({ _id: req.params.id, client: req.user._id });
     if (!project) { req.flash('error', 'Project not found'); return res.redirect('/client/my-projects'); }
-    const proposals = await Proposal.find({ project: project._id }).populate('freelancer', 'name skills rating reviewCount hourlyRate').sort({ createdAt: -1 });
+    const proposals = await Proposal.find({ project: project._id }).populate('freelancer', 'name skills rating reviewCount hourlyRate googleAvatar').sort({ createdAt: -1 });
     res.render('client/proposals', { title: 'Proposals - FreelanceHub', project, proposals });
   } catch (err) {
     req.flash('error', 'Failed to load proposals');

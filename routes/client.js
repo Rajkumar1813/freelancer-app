@@ -9,6 +9,7 @@ router.get('/dashboard', clientController.getDashboard);
 router.get('/post-project', clientController.getPostProject);
 router.post('/post-project', clientController.postProject);
 router.get('/my-projects', clientController.getMyProjects);
+router.get('/proposals', clientController.getAllProposals);
 router.get('/my-projects/:id/proposals', clientController.getProjectProposals);
 router.post('/proposals/:proposalId/accept', clientController.acceptProposal);
 router.post('/projects/:id/complete', clientController.markProjectComplete);

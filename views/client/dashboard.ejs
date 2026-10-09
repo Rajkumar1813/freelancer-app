@@ -27,34 +27,46 @@
         </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card stat-blue">
-          <div class="stat-icon"><i class="fas fa-folder-open"></i></div>
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+        <div class="stat-card stat-orange">
+          <div class="stat-icon"><i class="fas fa-clock"></i></div>
           <div class="stat-info">
-            <div class="stat-value"><%= stats.activeProjects %></div>
-            <div class="stat-label">Active Projects</div>
+            <div class="stat-value"><%= stats.pendingProjects %></div>
+            <div class="stat-label">Pending Projects</div>
           </div>
+          <div class="stat-sub"><a href="/client/my-projects?status=open" style="color:var(--text-muted);text-decoration:none;">Open / Hiring →</a></div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon"><i class="fas fa-laptop-code"></i></div>
+          <div class="stat-info">
+            <div class="stat-value"><%= stats.inProgressProjects %></div>
+            <div class="stat-label">Freelancer Working</div>
+          </div>
+          <div class="stat-sub"><a href="/client/my-projects?status=in_progress" style="color:var(--text-muted);text-decoration:none;">In Progress →</a></div>
         </div>
         <div class="stat-card stat-green">
           <div class="stat-icon"><i class="fas fa-check-double"></i></div>
           <div class="stat-info">
             <div class="stat-value"><%= stats.completedProjects %></div>
-            <div class="stat-label">Completed</div>
+            <div class="stat-label">Completed Projects</div>
           </div>
+          <div class="stat-sub"><a href="/client/my-projects?status=completed" style="color:var(--text-muted);text-decoration:none;">Delivered →</a></div>
         </div>
         <div class="stat-card stat-purple">
-          <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
-          <div class="stat-info">
-            <div class="stat-value">₹<%= (stats.totalSpent || 0).toLocaleString('en-IN') %></div>
-            <div class="stat-label">Total Spent</div>
-          </div>
-        </div>
-        <div class="stat-card stat-orange">
           <div class="stat-icon"><i class="fas fa-paper-plane"></i></div>
           <div class="stat-info">
             <div class="stat-value"><%= stats.totalProposals %></div>
             <div class="stat-label">Proposals Received</div>
           </div>
+          <div class="stat-sub"><a href="/client/proposals" style="color:var(--primary);font-weight:600;text-decoration:none;">View all proposals →</a></div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
+          <div class="stat-info">
+            <div class="stat-value">₹<%= (stats.totalSpent || 0).toLocaleString('en-IN') %></div>
+            <div class="stat-label">Total Spent</div>
+          </div>
+          <div class="stat-sub">Across completed work</div>
         </div>
       </div>
 

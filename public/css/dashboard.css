@@ -6,12 +6,14 @@
 .stat-green::before { background: var(--success); }
 .stat-purple::before { background: var(--primary); }
 .stat-orange::before { background: var(--warning); }
+.stat-red::before { background: var(--danger, #ef4444); }
 .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .stat-icon { font-size: 1.5rem; }
 .stat-blue .stat-icon { color: var(--info); }
 .stat-green .stat-icon { color: var(--success); }
 .stat-purple .stat-icon { color: var(--primary); }
 .stat-orange .stat-icon { color: var(--warning); }
+.stat-red .stat-icon { color: var(--danger, #ef4444); }
 .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; }
 .stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
 .stat-sub { font-size: 0.78rem; color: var(--text-muted); border-top: 1px solid var(--border-light); padding-top: 8px; }

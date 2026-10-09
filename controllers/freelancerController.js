@@ -9,11 +9,13 @@ const { getIO } = require('../config/socket');
 
 exports.getDashboard = async (req, res) => {
   try {
-    const [activeProjects, completedProjects, totalProposals, pendingProposals] = await Promise.all([
+    const [activeProjects, completedProjects, totalProposals, pendingProposals, rejectedProposals, acceptedProposals] = await Promise.all([
       Project.countDocuments({ hiredFreelancer: req.user._id, status: 'in_progress' }),
       Project.countDocuments({ hiredFreelancer: req.user._id, status: 'completed' }),
       Proposal.countDocuments({ freelancer: req.user._id }),
-      Proposal.countDocuments({ freelancer: req.user._id, status: 'pending' })
+      Proposal.countDocuments({ freelancer: req.user._id, status: 'pending' }),
+      Proposal.countDocuments({ freelancer: req.user._id, status: 'rejected' }),
+      Proposal.countDocuments({ freelancer: req.user._id, status: 'accepted' })
     ]);
 
     const recentProposals = await Proposal.find({ freelancer: req.user._id })
@@ -22,7 +24,15 @@ exports.getDashboard = async (req, res) => {
 
     res.render('freelancer/dashboard', {
       title: 'Freelancer Dashboard - FreelanceHub',
-      stats: { activeProjects, completedProjects, totalProposals, pendingProposals, totalEarnings: req.user.totalEarnings || 0 },
+      stats: {
+        activeProjects,
+        completedProjects,
+        totalProposals,
+        pendingProposals,
+        rejectedProposals,
+        acceptedProposals,
+        totalEarnings: req.user.totalEarnings || 0
+      },
       recentProposals, graphData
     });
   } catch (err) {
@@ -103,7 +113,18 @@ exports.getMyProposals = async (req, res) => {
     let query = { freelancer: req.user._id };
     if (status) query.status = status;
     const proposals = await Proposal.find(query).populate('project', 'title budget status deadline client').sort(sort);
-    res.render('freelancer/my-proposals', { title: 'My Proposals - FreelanceHub', proposals, filters: req.query });
+
+    // Proposal status counts for quick tabs
+    const allUserProps = await Proposal.find({ freelancer: req.user._id }).select('status').lean();
+    const counts = {
+      all: allUserProps.length,
+      pending: allUserProps.filter(p => p.status === 'pending').length,
+      accepted: allUserProps.filter(p => p.status === 'accepted').length,
+      rejected: allUserProps.filter(p => p.status === 'rejected').length,
+      withdrawn: allUserProps.filter(p => p.status === 'withdrawn').length
+    };
+
+    res.render('freelancer/my-proposals', { title: 'My Proposals - FreelanceHub', proposals, counts, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load proposals');
     res.redirect('/freelancer/dashboard');

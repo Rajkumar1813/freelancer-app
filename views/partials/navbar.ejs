@@ -17,8 +17,9 @@
       <% if (currentUser.role === 'client') { %>
         <a href="/client/dashboard"       class="nav-link">Dashboard</a>
         <a href="/client/post-project"    class="nav-link">Post Project</a>
-        <a href="/client/find-freelancer" class="nav-link">Find Talent</a>
         <a href="/client/my-projects"     class="nav-link">My Projects</a>
+        <a href="/client/proposals"       class="nav-link">Proposals</a>
+        <a href="/client/find-freelancer" class="nav-link">Find Talent</a>
       <% } else if (currentUser.role === 'freelancer') { %>
         <a href="/freelancer/dashboard"       class="nav-link">Dashboard</a>
         <a href="/freelancer/browse-projects" class="nav-link">Browse Projects</a>

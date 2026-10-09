@@ -19,21 +19,45 @@
         <div><h1 class="page-title">My Proposals</h1><p class="page-subtitle">Track all your submitted proposals</p></div>
         <a href="/freelancer/browse-projects" class="btn btn-primary"><i class="fas fa-search"></i> Find More Projects</a>
       </div>
+      <!-- Quick Status Badges / Filter Tabs -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <a href="/freelancer/my-proposals" class="btn btn-sm <%= !filters.status ? 'btn-primary' : 'btn-outline' %>" style="border-radius:20px;padding:6px 16px;">
+          All (<%= typeof counts !== 'undefined' ? counts.all : proposals.length %>)
+        </a>
+        <a href="/freelancer/my-proposals?status=pending" class="btn btn-sm <%= filters.status === 'pending' ? 'btn-primary' : 'btn-outline' %>" style="border-radius:20px;padding:6px 16px;color:<%= filters.status === 'pending' ? '#fff' : '#d97706' %>;border-color:rgba(217,119,6,0.3);">
+          <i class="fas fa-clock"></i> Pending (<%= typeof counts !== 'undefined' ? counts.pending : 0 %>)
+        </a>
+        <a href="/freelancer/my-proposals?status=accepted" class="btn btn-sm <%= filters.status === 'accepted' ? 'btn-primary' : 'btn-outline' %>" style="border-radius:20px;padding:6px 16px;color:<%= filters.status === 'accepted' ? '#fff' : '#16a34a' %>;border-color:rgba(22,163,74,0.3);">
+          <i class="fas fa-check-circle"></i> Accepted (<%= typeof counts !== 'undefined' ? counts.accepted : 0 %>)
+        </a>
+        <a href="/freelancer/my-proposals?status=rejected" class="btn btn-sm <%= filters.status === 'rejected' ? 'btn-primary' : 'btn-outline' %>" style="border-radius:20px;padding:6px 16px;color:<%= filters.status === 'rejected' ? '#fff' : '#ef4444' %>;border-color:rgba(239,68,68,0.3);">
+          <i class="fas fa-times-circle"></i> Rejected (<%= typeof counts !== 'undefined' ? counts.rejected : 0 %>)
+        </a>
+        <a href="/freelancer/my-proposals?status=withdrawn" class="btn btn-sm <%= filters.status === 'withdrawn' ? 'btn-primary' : 'btn-outline' %>" style="border-radius:20px;padding:6px 16px;">
+          Withdrawn (<%= typeof counts !== 'undefined' ? counts.withdrawn : 0 %>)
+        </a>
+      </div>
+
       <div class="filter-bar">
         <form action="/freelancer/my-proposals" method="GET" class="filter-form">
           <select name="status" class="filter-select" onchange="this.form.submit()">
-            <option value="">All Status</option>
+            <option value="">All Statuses</option>
             <% ['pending','accepted','rejected','withdrawn'].forEach(s => { %>
-              <option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option>
+              <option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s.toUpperCase() %></option>
             <% }) %>
           </select>
           <select name="sort" class="filter-select" onchange="this.form.submit()">
-            <option value="-createdAt">Newest First</option>
-            <option value="-bidAmount">Highest Bid</option>
+            <option value="-createdAt" <%= filters.sort === '-createdAt' ? 'selected' : '' %>>Newest First</option>
+            <option value="createdAt" <%= filters.sort === 'createdAt' ? 'selected' : '' %>>Oldest First</option>
+            <option value="-bidAmount" <%= filters.sort === '-bidAmount' ? 'selected' : '' %>>Highest Bid</option>
+            <option value="bidAmount" <%= filters.sort === 'bidAmount' ? 'selected' : '' %>>Lowest Bid</option>
           </select>
+          <% if (filters.status || filters.sort) { %>
+            <a href="/freelancer/my-proposals" class="btn btn-sm btn-outline"><i class="fas fa-undo"></i> Clear Filter</a>
+          <% } %>
         </form>
       </div>
-      <div class="table-card">
+      <div class="table-card table-responsive">
         <table class="data-table">
           <thead><tr><th>Project</th><th>Budget</th><th>My Bid</th><th>Delivery</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
           <tbody>
