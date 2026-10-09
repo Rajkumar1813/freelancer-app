@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Admin - FreelanceHub</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+      background:#0a0a14;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow-x:hidden;
+    }
+    body::before{
+      content:'';position:fixed;inset:0;
+      background-image:
+        linear-gradient(rgba(108,99,255,.07) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(108,99,255,.07) 1px,transparent 1px);
+      background-size:44px 44px;pointer-events:none;z-index:0;
+    }
+    body::after{
+      content:'';position:fixed;
+      width:700px;height:700px;border-radius:50%;
+      background:radial-gradient(circle,rgba(108,99,255,.12) 0%,transparent 70%);
+      top:-250px;right:-250px;pointer-events:none;z-index:0;
+    }
+    .glow-bl{
+      position:fixed;width:600px;height:600px;border-radius:50%;
+      background:radial-gradient(circle,rgba(118,75,162,.09) 0%,transparent 70%);
+      bottom:-200px;left:-150px;pointer-events:none;z-index:0;
+    }
+    .flash-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+    .adm-flash{
+      display:flex;align-items:center;gap:10px;padding:12px 18px;
+      border-radius:10px;font-size:.87rem;font-weight:500;
+      max-width:340px;animation:slideIn .3s ease;
+    }
+    .adm-flash-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .adm-flash-success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .adm-flash-close{background:none;border:none;cursor:pointer;color:inherit;opacity:.6;margin-left:auto;font-size:1.1rem;line-height:1;}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+    .wrap{position:relative;z-index:1;width:100%;max-width:500px;padding:24px;}
+    .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;}
+    .brand-icon{
+      width:52px;height:52px;border-radius:14px;
+      background:linear-gradient(135deg,#6c63ff,#764ba2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.5rem;color:#fff;box-shadow:0 8px 24px rgba(108,99,255,.4);
+    }
+    .brand-text h1{font-size:1.5rem;font-weight:800;color:#fff;margin:0;}
+    .brand-text span{font-size:.72rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.12em;font-weight:600;}
+
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(20px);
+      border-radius:20px;
+      padding:36px;
+      box-shadow:0 0 0 1px rgba(108,99,255,.08),0 32px 64px rgba(0,0,0,.5);
+    }
+    .card h2{font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:4px;}
+    .card .sub{color:rgba(255,255,255,.45);font-size:.87rem;margin-bottom:24px;}
+
+    .fg{margin-bottom:16px;}
+    .fg label{
+      display:flex;align-items:center;gap:6px;
+      font-size:.75rem;font-weight:700;color:rgba(255,255,255,.55);
+      text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;
+    }
+    .adm-input{
+      width:100%;background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:10px;padding:12px 16px;
+      font-size:.92rem;color:#fff;outline:none;transition:all .2s;font-family:inherit;
+    }
+    .adm-input::placeholder{color:rgba(255,255,255,.25);}
+    .adm-input:focus{
+      border-color:rgba(108,99,255,.8);
+      background:rgba(108,99,255,.08);
+      box-shadow:0 0 0 3px rgba(108,99,255,.2);
+    }
+    .pw-wrap{position:relative;}
+    .pw-wrap .adm-input{padding-right:44px;}
+    .pw-toggle{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;color:rgba(255,255,255,.4);
+      cursor:pointer;font-size:.9rem;transition:color .2s;padding:4px;
+    }
+    .pw-toggle:hover{color:rgba(255,255,255,.8);}
+
+    .strength-wrap{margin-top:6px;display:flex;align-items:center;gap:8px;}
+    .strength-bar{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
+    .strength-fill{height:100%;width:0;border-radius:2px;transition:all .3s;}
+    .strength-text{font-size:.72rem;font-weight:600;min-width:44px;}
+
+    .secret-fg{
+      background:rgba(108,99,255,.08);
+      border:1px solid rgba(108,99,255,.2);
+      border-radius:12px;padding:14px;margin-bottom:20px;
+    }
+    .secret-fg label{color:rgba(108,99,255,.9);}
+    .secret-fg .adm-input{border-color:rgba(108,99,255,.3);}
+    .hint{font-size:.73rem;color:rgba(255,255,255,.4);margin-top:6px;display:flex;align-items:center;gap:5px;}
+    .hint code{color:#a78bfa;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;}
+
+    .submit-btn{
+      width:100%;padding:13px;
+      background:linear-gradient(135deg,#6c63ff,#764ba2);
+      border:none;border-radius:10px;color:#fff;
+      font-size:.95rem;font-weight:700;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      transition:all .2s;box-shadow:0 4px 16px rgba(108,99,255,.35);
+      letter-spacing:.02em;font-family:inherit;
+    }
+    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(108,99,255,.5);}
+
+    .divider{display:flex;align-items:center;gap:12px;margin:22px 0;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+    .divider span{font-size:.72rem;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;}
+
+    .footer-links{display:flex;flex-direction:column;align-items:center;gap:10px;}
+    .login-link{font-size:.82rem;color:rgba(255,255,255,.4);}
+    .login-link a{color:rgba(108,99,255,.9);text-decoration:none;font-weight:600;}
+    .login-link a:hover{color:#fff;}
+    .back-link-adm{display:flex;align-items:center;gap:6px;font-size:.8rem;color:rgba(255,255,255,.4);text-decoration:none;}
+    .back-link-adm:hover{color:#fff;}
+  </style>
+</head>
+<body>
+  <div class="glow-bl"></div>
+
+  <div class="flash-wrap">
+    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+      <% success.forEach(msg => { %>
+        <div class="adm-flash adm-flash-success">
+          <i class="fas fa-check-circle"></i> <%= msg %>
+          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+      <% }) %>
+    <% } %>
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+      <% error.forEach(msg => { %>
+        <div class="adm-flash adm-flash-error">
+          <i class="fas fa-exclamation-circle"></i> <%= msg %>
+          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <div class="wrap">
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-shield-halved"></i></div>
+      <div class="brand-text">
+        <h1>FreelanceHub</h1>
+        <span>Admin Setup</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Create Administrator</h2>
+      <p class="sub">Register a new verified administrator account</p>
+
+      <form action="/auth/admin/register" method="POST">
+        <div class="fg">
+          <label><i class="fas fa-user"></i> Full Name</label>
+          <input type="text" name="name" class="adm-input" placeholder="Super Admin" required minlength="2">
+        </div>
+
+        <div class="fg">
+          <label><i class="fas fa-envelope"></i> Email Address</label>
+          <input type="email" name="email" class="adm-input" placeholder="admin@freelancehub.com" required>
+        </div>
+
+        <div class="fg">
+          <label><i class="fas fa-lock"></i> Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password" name="password" id="ap1"
+              class="adm-input" placeholder="Min 8 characters"
+              required minlength="8"
+              oninput="checkStrength(this.value)"
+            >
+            <button type="button" class="pw-toggle" onclick="togglePw('ap1','icon1')">
+              <i class="fas fa-eye" id="icon1"></i>
+            </button>
+          </div>
+          <div class="strength-wrap">
+            <div class="strength-bar"><div class="strength-fill" id="sFill"></div></div>
+            <span class="strength-text" id="sText"></span>
+          </div>
+        </div>
+
+        <div class="fg">
+          <label><i class="fas fa-lock"></i> Confirm Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password" name="confirmPassword" id="ap2"
+              class="adm-input" placeholder="Repeat password"
+              required oninput="checkMatch()"
+            >
+            <button type="button" class="pw-toggle" onclick="togglePw('ap2','icon2')">
+              <i class="fas fa-eye" id="icon2"></i>
+            </button>
+          </div>
+          <div id="matchMsg" style="font-size:.72rem;margin-top:5px;"></div>
+        </div>
+
+        <div class="fg secret-fg">
+          <label><i class="fas fa-key"></i> Admin Secret Key</label>
+          <div class="pw-wrap">
+            <input
+              type="password" name="secretKey" id="ap3"
+              class="adm-input" placeholder="Enter ADMIN_SECRET_KEY"
+              required
+            >
+            <button type="button" class="pw-toggle" onclick="togglePw('ap3','icon3')">
+              <i class="fas fa-eye" id="icon3"></i>
+            </button>
+          </div>
+          <p class="hint"><i class="fas fa-info-circle"></i> Requires <code>ADMIN_SECRET_KEY</code> from the server <code>.env</code> file</p>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-user-shield"></i> Create Admin Account
+        </button>
+      </form>
+
+      <div class="divider"><span>existing admin</span></div>
+
+      <div class="footer-links">
+        <p class="login-link">
+          Already registered? <a href="/auth/admin/login">Admin Sign In</a>
+        </p>
+        <a href="/auth/login" class="back-link-adm">
+          <i class="fas fa-arrow-left"></i> Back to User Portal
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    function togglePw(id, iconId) {
+      const i = document.getElementById(id);
+      const icon = document.getElementById(iconId);
+      if (i.type === 'password') {
+        i.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        i.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+
+    function checkStrength(val) {
+      const fill = document.getElementById('sFill');
+      const text = document.getElementById('sText');
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (val.length >= 12) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const levels = [
+        { pct:'0%', color:'transparent', label:'', lc:'' },
+        { pct:'25%', color:'#ef4444', label:'Weak', lc:'#ef4444' },
+        { pct:'50%', color:'#f59e0b', label:'Fair', lc:'#f59e0b' },
+        { pct:'75%', color:'#3b82f6', label:'Good', lc:'#3b82f6' },
+        { pct:'100%', color:'#22c55e', label:'Strong', lc:'#22c55e' }
+      ];
+      const lv = levels[Math.min(score, 4)];
+      fill.style.width = lv.pct;
+      fill.style.background = lv.color;
+      text.textContent = lv.label;
+      text.style.color = lv.lc;
+    }
+
+    function checkMatch() {
+      const p1 = document.getElementById('ap1').value;
+      const p2 = document.getElementById('ap2').value;
+      const msg = document.getElementById('matchMsg');
+      if (!p2) { msg.innerHTML = ''; return; }
+      if (p1 === p2) {
+        msg.innerHTML = '<span style="color:#86efac"><i class="fas fa-check"></i> Passwords match</span>';
+      } else {
+        msg.innerHTML = '<span style="color:#fca5a5"><i class="fas fa-times"></i> Passwords do not match</span>';
+      }
+    }
+  </script>
+</body>
+</html>

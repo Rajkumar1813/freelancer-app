@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .project-detail-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .project-detail-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .detail-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .detail-badge-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .detail-budget {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .skill-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .skill-pill {
+      background: var(--secondary);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border-light);
+    }
+    .client-sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .client-profile-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .client-avatar-lg {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body class="app-body">
+  <%- include('../partials/navbar') %>
+  <%- include('../partials/flash') %>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+    <main class="main-content">
+      <div class="back-nav" style="margin-bottom:16px;">
+        <% if (currentUser.role === 'freelancer') { %>
+          <a href="/freelancer/browse-projects" class="back-link"><i class="fas fa-arrow-left"></i> Back to Browse Projects</a>
+        <% } else if (currentUser.role === 'client') { %>
+          <a href="/client/my-projects" class="back-link"><i class="fas fa-arrow-left"></i> Back to My Projects</a>
+        <% } else { %>
+          <a href="/admin/projects" class="back-link"><i class="fas fa-arrow-left"></i> Back to All Projects</a>
+        <% } %>
+      </div>
+
+      <div class="project-detail-layout">
+        <!-- Main details -->
+        <div class="project-main-col">
+          <div class="detail-card">
+            <div class="detail-badge-group">
+              <span class="badge status-<%= project.status %>"><%= project.status %></span>
+              <span class="badge role-client"><i class="fas fa-folder"></i> <%= project.category %></span>
+              <% if (project.deadline) { %>
+                <span class="badge"><i class="fas fa-calendar-alt"></i> Due: <%= new Date(project.deadline).toLocaleDateString('en-IN') %></span>
+              <% } %>
+            </div>
+
+            <div class="detail-header">
+              <div>
+                <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;"><%= project.title %></h1>
+                <p style="color:var(--text-muted);font-size:0.88rem;">Posted <%= new Date(project.createdAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) %></p>
+              </div>
+              <div style="text-align:right;">
+                <div class="detail-budget">₹<%= (project.budget || 0).toLocaleString('en-IN') %></div>
+                <small style="color:var(--text-muted);font-weight:600;">Fixed Price Budget</small>
+              </div>
+            </div>
+
+            <hr style="border:none;border-top:1px solid var(--border-light);margin:20px 0;">
+
+            <h3 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;">Project Description</h3>
+            <div style="color:var(--text-secondary);line-height:1.7;white-space:pre-line;font-size:0.95rem;">
+              <%= project.description %>
+            </div>
+
+            <% if (project.skillsRequired && project.skillsRequired.length > 0) { %>
+              <div style="margin-top:28px;">
+                <h4 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Skills & Deliverables</h4>
+                <div class="skill-pills">
+                  <% project.skillsRequired.forEach(sk => { %>
+                    <span class="skill-pill"><i class="fas fa-check"></i> <%= sk %></span>
+                  <% }) %>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- Action buttons -->
+            <div style="margin-top:32px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+              <% if (currentUser.role === 'freelancer' && project.status === 'open') { %>
+                <% if (typeof userProposal !== 'undefined' && userProposal) { %>
+                  <div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:var(--success);padding:10px 18px;border-radius:10px;font-weight:600;display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-check-circle"></i> You applied with bid ₹<%= userProposal.bidAmount %> (Status: <%= userProposal.status %>)
+                  </div>
+                <% } else { %>
+                  <button onclick="openApplyModal('<%= project._id %>', '<%= project.title %>', '<%= project.budget %>')" class="btn btn-primary btn-lg">
+                    <i class="fas fa-paper-plane"></i> Apply for this Project
+                  </button>
+                <% } %>
+                <form action="/freelancer/message-client" method="POST" style="display:inline">
+                  <input type="hidden" name="clientId" value="<%= project.client?._id %>">
+                  <input type="hidden" name="projectId" value="<%= project._id %>">
+                  <input type="hidden" name="message" value="Hi, I have a question regarding: <%= project.title %>">
+                  <button type="submit" class="btn btn-outline btn-lg"><i class="fas fa-comment"></i> Contact Client</button>
+                </form>
+              <% } else if (currentUser.role === 'client' && project.client?._id?.toString() === currentUser._id?.toString()) { %>
+                <a href="/client/my-projects/<%= project._id %>/proposals" class="btn btn-primary btn-lg">
+                  <i class="fas fa-users"></i> Review Proposals (<%= typeof proposalCount !== 'undefined' ? proposalCount : 0 %>)
+                </a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar col -->
+        <div class="project-sidebar-col">
+          <div class="client-sidebar-card">
+            <h3 style="font-size:1.05rem;font-weight:700;color:var(--text-primary);border-bottom:1px solid var(--border-light);padding-bottom:12px;">About the Client</h3>
+            <div class="client-profile-header">
+              <img src="<%= project.client?.googleAvatar || (project.client ? '/avatar/'+project.client._id : '/images/default-avatar.png') %>"
+                   class="client-avatar-lg" alt="<%= project.client?.name %>" onerror="this.src='/images/default-avatar.png'">
+              <div>
+                <strong style="color:var(--text-primary);font-size:1rem;"><%= project.client?.name || 'Verified Client' %></strong>
+                <% if (project.client?.company) { %>
+                  <p style="font-size:0.82rem;color:var(--text-muted);margin-top:2px;"><i class="fas fa-building"></i> <%= project.client.company %></p>
+                <% } %>
+                <div style="font-size:0.82rem;color:var(--warning);margin-top:4px;">
+                  <i class="fas fa-star"></i> <%= (project.client?.rating || 5.0).toFixed(1) %> Client Rating
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size:0.88rem;color:var(--text-secondary);display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--border-light);">
+              <div><i class="fas fa-shield-alt" style="color:var(--success);width:20px;"></i> Payment Method Verified</div>
+              <div><i class="fas fa-clock" style="color:var(--info);width:20px;"></i> Instant Notification System</div>
+              <div><i class="fas fa-rupee-sign" style="color:var(--primary);width:20px;"></i> Razorpay Escrow Protection</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <% if (currentUser.role === 'freelancer') { %>
+  <!-- Apply Modal -->
+  <div class="modal-overlay" id="applyModal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Submit Proposal</h3>
+        <button onclick="closeApplyModal()" class="modal-close">×</button>
+      </div>
+      <form id="applyForm" method="POST" class="modal-body">
+        <p class="modal-project-title" id="modalProjectTitle"></p>
+        <div class="form-group">
+          <label>Your Bid (₹) *</label>
+          <input type="number" name="bidAmount" id="modalBid" class="form-input" placeholder="Enter your bid amount" required min="1">
+        </div>
+        <div class="form-group">
+          <label>Delivery Time (days) *</label>
+          <input type="number" name="deliveryTime" class="form-input" placeholder="e.g. 7" required min="1">
+        </div>
+        <div class="form-group">
+          <label>Cover Letter *</label>
+          <textarea name="coverLetter" class="form-textarea" rows="5"
+            placeholder="Explain why you are the ideal freelancer for this project..."
+            required minlength="30"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Submit Proposal</button>
+          <button type="button" onclick="closeApplyModal()" class="btn btn-outline">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openApplyModal(projectId, title, budget) {
+      document.getElementById('applyForm').action = '/freelancer/projects/' + projectId + '/apply';
+      document.getElementById('modalProjectTitle').textContent = title;
+      document.getElementById('modalBid').value = budget;
+      document.getElementById('applyModal').style.display = 'flex';
+    }
+    function closeApplyModal() {
+      document.getElementById('applyModal').style.display = 'none';
+    }
+    document.getElementById('applyModal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeApplyModal();
+    });
+  </script>
+  <% } %>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

@@ -1,9 +1,14 @@
 <%# views/partials/navbar.ejs %>
 <nav class="navbar">
   <div class="nav-brand">
+    <% if (currentUser) { %>
+      <button class="mobile-sidebar-toggle" id="sidebarToggleBtn" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+    <% } %>
     <a href="/" class="brand-link">
       <span class="brand-icon">⚡</span>
-      <span class="brand-name">WorkOrBit</span>
+      <span class="brand-name">FreelanceHub</span>
     </a>
   </div>
 

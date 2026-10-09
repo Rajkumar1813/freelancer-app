@@ -3,268 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login - FreelanceHub</title>
+  <title><%= typeof title !== 'undefined' ? title : 'Login - FreelanceHub' %></title>
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{
-      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-      background:#0a0a14;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      overflow:hidden;
+    .admin-switch-link {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
     }
-    /* Grid bg */
-    body::before{
-      content:'';
-      position:fixed;inset:0;
-      background-image:
-        linear-gradient(rgba(108,99,255,.07) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(108,99,255,.07) 1px,transparent 1px);
-      background-size:44px 44px;
-      pointer-events:none;z-index:0;
+    .admin-switch-link a {
+      color: var(--primary);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    /* Glow top-right */
-    body::after{
-      content:'';
-      position:fixed;
-      width:700px;height:700px;border-radius:50%;
-      background:radial-gradient(circle,rgba(108,99,255,.13) 0%,transparent 70%);
-      top:-250px;right:-250px;pointer-events:none;z-index:0;
-    }
-    .glow-bl{
-      position:fixed;
-      width:600px;height:600px;border-radius:50%;
-      background:radial-gradient(circle,rgba(118,75,162,.10) 0%,transparent 70%);
-      bottom:-200px;left:-150px;pointer-events:none;z-index:0;
-    }
-
-    /* Flash */
-    .flash-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
-    .adm-flash{
-      display:flex;align-items:center;gap:10px;
-      padding:12px 18px;border-radius:10px;font-size:.87rem;font-weight:500;
-      max-width:340px;animation:slideIn .3s ease;
-    }
-    .adm-flash-error{background:rgba(239,68,68,.13);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
-    .adm-flash-success{background:rgba(34,197,94,.13);border:1px solid rgba(34,197,94,.3);color:#86efac;}
-    .adm-flash-close{background:none;border:none;cursor:pointer;color:inherit;opacity:.6;margin-left:auto;font-size:1rem;line-height:1;}
-    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-
-    /* Wrap */
-    .wrap{position:relative;z-index:1;width:100%;max-width:460px;padding:24px;}
-
-    /* Brand */
-    .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:36px;}
-    .brand-icon{
-      width:54px;height:54px;border-radius:14px;
-      background:linear-gradient(135deg,#6c63ff,#764ba2);
-      display:flex;align-items:center;justify-content:center;
-      font-size:1.5rem;color:#fff;
-      box-shadow:0 8px 24px rgba(108,99,255,.4);
-    }
-    .brand-text h1{font-size:1.5rem;font-weight:800;color:#fff;margin:0;letter-spacing:-.3px;}
-    .brand-text span{font-size:.72rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.12em;font-weight:600;}
-
-    /* Card */
-    .card{
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      backdrop-filter:blur(20px);
-      border-radius:20px;
-      padding:36px;
-      box-shadow:0 0 0 1px rgba(108,99,255,.08),0 32px 64px rgba(0,0,0,.5);
-    }
-    .card h2{font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:4px;}
-    .card .sub{color:rgba(255,255,255,.35);font-size:.87rem;margin-bottom:28px;}
-
-    /* Form */
-    .fg{margin-bottom:18px;}
-    .fg label{
-      display:flex;align-items:center;gap:6px;
-      font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);
-      text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;
-    }
-    .adm-input{
-      width:100%;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:10px;
-      padding:12px 16px;
-      font-size:.92rem;color:#fff;
-      outline:none;transition:all .2s;font-family:inherit;
-    }
-    .adm-input::placeholder{color:rgba(255,255,255,.18);}
-    .adm-input:focus{
-      border-color:rgba(108,99,255,.6);
-      background:rgba(108,99,255,.08);
-      box-shadow:0 0 0 3px rgba(108,99,255,.15);
-    }
-    .pw-wrap{position:relative;}
-    .pw-wrap .adm-input{padding-right:44px;}
-    .pw-toggle{
-      position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      background:none;border:none;color:rgba(255,255,255,.3);
-      cursor:pointer;font-size:.88rem;transition:color .2s;padding:4px;
-    }
-    .pw-toggle:hover{color:rgba(255,255,255,.6);}
-
-    /* Submit */
-    .submit-btn{
-      width:100%;padding:13px;
-      background:linear-gradient(135deg,#6c63ff,#764ba2);
-      border:none;border-radius:10px;color:#fff;
-      font-size:.95rem;font-weight:700;cursor:pointer;margin-top:6px;
-      display:flex;align-items:center;justify-content:center;gap:8px;
-      transition:all .2s;
-      box-shadow:0 4px 16px rgba(108,99,255,.35);
-      letter-spacing:.02em;font-family:inherit;
-    }
-    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(108,99,255,.45);}
-    .submit-btn:active{transform:translateY(0);}
-
-    /* Divider */
-    .divider{display:flex;align-items:center;gap:12px;margin:22px 0;}
-    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
-    .divider span{font-size:.72rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.08em;}
-
-    /* Security note */
-    .sec-note{
-      background:rgba(108,99,255,.08);
-      border:1px solid rgba(108,99,255,.18);
-      border-radius:10px;padding:12px 14px;
-      display:flex;gap:10px;align-items:flex-start;margin-top:20px;
-    }
-    .sec-note i{color:rgba(108,99,255,.75);font-size:.82rem;margin-top:2px;flex-shrink:0;}
-    .sec-note p{font-size:.76rem;color:rgba(255,255,255,.28);line-height:1.6;margin:0;}
-
-    /* Footer links */
-    .footer-links{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px;}
-    .reg-link{font-size:.82rem;color:rgba(255,255,255,.25);}
-    .reg-link a{color:rgba(108,99,255,.8);text-decoration:none;font-weight:600;transition:color .2s;}
-    .reg-link a:hover{color:#6c63ff;}
-    .back-link-adm{
-      display:flex;align-items:center;gap:6px;
-      font-size:.78rem;color:rgba(255,255,255,.18);
-      text-decoration:none;transition:color .2s;
-    }
-    .back-link-adm:hover{color:rgba(255,255,255,.45);}
-
-    /* Dark mode overrides for this page */
-    [data-theme="dark"] body,[data-theme="light"] body{background:#0a0a14 !important;}
   </style>
 </head>
-<body>
-  <div class="glow-bl"></div>
-
-  <!-- Flash messages -->
-  <div class="flash-wrap">
-    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
-      <% success.forEach(msg => { %>
-        <div class="adm-flash adm-flash-success">
-          <i class="fas fa-check-circle"></i> <%= msg %>
-          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
-        </div>
-      <% }) %>
-    <% } %>
-    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-      <% error.forEach(msg => { %>
-        <div class="adm-flash adm-flash-error">
-          <i class="fas fa-exclamation-circle"></i> <%= msg %>
-          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
-        </div>
-      <% }) %>
-    <% } %>
-  </div>
-
-  <div class="wrap">
-    <!-- Brand -->
-    <div class="brand">
-      <div class="brand-icon"><i class="fas fa-shield-halved"></i></div>
-      <div class="brand-text">
+<body class="auth-body">
+  <%- include('../partials/flash') %>
+  <div class="auth-container">
+    <div class="auth-left">
+      <div class="auth-brand">
+        <span class="brand-icon-lg">⚡</span>
         <h1>FreelanceHub</h1>
-        <span>Admin Control Panel</span>
+        <p>Connect. Create. Collaborate.</p>
+      </div>
+      <div class="auth-features">
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Hire verified elite freelancers</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Post & manage projects effortlessly</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Real-time socket messaging & chat</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Secure Razorpay escrow payments</div>
       </div>
     </div>
 
-    <!-- Card -->
-    <div class="card">
-      <h2>Welcome back, Admin</h2>
-      <p class="sub">Sign in to access the control panel</p>
+    <div class="auth-right">
+      <div class="auth-card">
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Login to your FreelanceHub account</p>
 
-      <form action="/auth/admin/login" method="POST">
-        <div class="fg">
-          <label><i class="fas fa-envelope"></i> Email Address</label>
-          <input
-            type="email" name="email" class="adm-input"
-            placeholder="admin@freelancehub.com"
-            required autocomplete="email"
-          >
+        <% if (locals.showUnverifiedMsg) { %>
+        <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:10px;
+                    padding:12px 14px;margin-bottom:18px;font-size:0.84rem;color:#b45309;">
+          <p style="margin:0;font-weight:700;">
+            <i class="fas fa-envelope-open-text" style="margin-right:5px;"></i>
+            OTP sent to your email address!
+          </p>
+          <p style="margin:6px 0 0;line-height:1.5;">
+            Your account is not verified yet. Please check your inbox and
+            <strong>enter the OTP</strong> to activate your profile.
+          </p>
         </div>
+        <% } %>
 
-        <div class="fg">
-          <label><i class="fas fa-lock"></i> Password</label>
-          <div class="pw-wrap">
-            <input
-              type="password" name="password" id="ap"
-              class="adm-input" placeholder="••••••••••"
-              required autocomplete="current-password"
-            >
-            <button type="button" class="pw-toggle" onclick="togglePw()">
-              <i class="fas fa-eye" id="apIcon"></i>
-            </button>
+        <form action="/auth/login" method="POST" class="auth-form">
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email Address</label>
+            <input type="email" name="email" placeholder="you@domain.com"
+                   required class="form-input" autocomplete="email">
           </div>
-        </div>
+          <div class="form-group">
+            <label style="display:flex;justify-content:space-between;align-items:center;">
+              <span><i class="fas fa-lock"></i> Password</span>
+              <a href="/auth/forgot-password"
+                 style="font-size:0.8rem;font-weight:600;color:var(--primary);">
+                Forgot Password?
+              </a>
+            </label>
+            <div class="input-with-icon">
+              <input type="password" name="password" id="loginPassword"
+                     placeholder="••••••••" required class="form-input" autocomplete="current-password">
+              <button type="button" class="toggle-password"
+                      onclick="togglePass('loginPassword')">
+                <i class="fas fa-eye" id="loginPasswordIcon"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full btn-lg">
+            <i class="fas fa-sign-in-alt"></i> Login
+          </button>
+        </form>
 
-        <button type="submit" class="submit-btn">
-          <i class="fas fa-sign-in-alt"></i>
-          Access Admin Panel
-        </button>
-      </form>
-
-      <div class="sec-note">
-        <i class="fas fa-lock"></i>
-        <p>This panel is restricted to authorized administrators only. All login attempts are logged and monitored.</p>
-      </div>
-
-      <div class="divider"><span>admin access</span></div>
-
-      <div class="footer-links">
-        <p class="reg-link">
-          Need admin access? <a href="/auth/admin/register">Create Admin Account</a>
-        </p>
-        <a href="/auth/login" class="back-link-adm">
-          <i class="fas fa-arrow-left"></i> Back to main site login
+        <div class="auth-divider"><span>or continue with</span></div>
+        <a href="/auth/google" class="btn btn-google btn-full">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+               alt="Google" width="20">
+          Continue with Google
         </a>
+
+        <p class="auth-switch">
+          Don't have an account? <a href="/auth/register">Register here</a>
+        </p>
+
+        <div class="admin-switch-link">
+          Administrator? <a href="/auth/admin/login"><i class="fas fa-shield-halved"></i> Admin Control Panel</a>
+        </div>
       </div>
     </div>
   </div>
 
-  <script>
-    function togglePw() {
-      const i = document.getElementById('ap');
-      const icon = document.getElementById('apIcon');
-      if (i.type === 'password') {
-        i.type = 'text';
-        icon.className = 'fas fa-eye-slash';
-      } else {
-        i.type = 'password';
-        icon.className = 'fas fa-eye';
-      }
-    }
-    // Auto dismiss flashes
-    document.querySelectorAll('.adm-flash').forEach(f => {
-      setTimeout(() => {
-        f.style.transition = 'opacity .3s';
-        f.style.opacity = '0';
-        setTimeout(() => f.remove(), 300);
-      }, 5000);
-    });
-  </script>
+  <script src="/js/main.js"></script>
+  <script src="/js/theme.js"></script>
 </body>
 </html>

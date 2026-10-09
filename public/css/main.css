@@ -399,3 +399,111 @@ img { max-width: 100%; }
 .progress-input-wrap { display: flex; align-items: center; gap: 12px; }
 .progress-range { flex: 1; accent-color: var(--primary); }
 .progress-val { font-size: 1rem; font-weight: 700; color: var(--primary); min-width: 46px; }
+
+/* ===== RESPONSIVE UTILITIES & MOBILE NAVIGATION ===== */
+.mobile-sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  margin-right: 8px;
+}
+.mobile-sidebar-toggle:hover {
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+.table-card {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.data-table {
+  min-width: 600px;
+}
+
+@media (max-width: 992px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .chart-wide {
+    grid-column: span 1;
+  }
+  .tables-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-center {
+    display: none;
+  }
+  .navbar {
+    padding: 0 14px;
+    gap: 12px;
+  }
+  .brand-name {
+    font-size: 1.05rem;
+  }
+  .user-name-nav {
+    display: none;
+  }
+  .sidebar {
+    position: fixed;
+    top: var(--navbar-h);
+    left: -280px;
+    bottom: 0;
+    width: 260px;
+    height: calc(100vh - var(--navbar-h));
+    z-index: 150;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.open {
+    left: 0;
+  }
+  .app-layout {
+    display: block;
+  }
+  .main-content {
+    padding: 16px;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 14px;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+  }
+  .projects-grid, .freelancers-grid {
+    grid-template-columns: 1fr;
+  }
+  .plc-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .filter-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-input, .filter-select {
+    width: 100%;
+    min-width: 0;
+  }
+}

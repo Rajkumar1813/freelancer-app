@@ -3,350 +3,158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Admin - FreelanceHub</title>
+  <title><%= typeof title !== 'undefined' ? title : 'Register - FreelanceHub' %></title>
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{
-      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-      background:#0a0a14;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      overflow:hidden;
+    .admin-switch-link {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
     }
-    body::before{
-      content:'';position:fixed;inset:0;
-      background-image:
-        linear-gradient(rgba(108,99,255,.07) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(108,99,255,.07) 1px,transparent 1px);
-      background-size:44px 44px;
-      pointer-events:none;z-index:0;
+    .admin-switch-link a {
+      color: var(--primary);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    body::after{
-      content:'';position:fixed;
-      width:700px;height:700px;border-radius:50%;
-      background:radial-gradient(circle,rgba(108,99,255,.12) 0%,transparent 70%);
-      top:-250px;right:-250px;pointer-events:none;z-index:0;
+    .strength-meter {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
     }
-    .glow-bl{
-      position:fixed;width:600px;height:600px;border-radius:50%;
-      background:radial-gradient(circle,rgba(118,75,162,.09) 0%,transparent 70%);
-      bottom:-200px;left:-150px;pointer-events:none;z-index:0;
+    .strength-meter-bar {
+      height: 100%;
+      width: 0;
+      transition: all 0.3s ease;
     }
-
-    /* Flash */
-    .flash-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
-    .adm-flash{
-      display:flex;align-items:center;gap:10px;padding:12px 18px;
-      border-radius:10px;font-size:.87rem;font-weight:500;
-      max-width:340px;animation:slideIn .3s ease;
-    }
-    .adm-flash-error{background:rgba(239,68,68,.13);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
-    .adm-flash-success{background:rgba(34,197,94,.13);border:1px solid rgba(34,197,94,.3);color:#86efac;}
-    .adm-flash-close{background:none;border:none;cursor:pointer;color:inherit;opacity:.6;margin-left:auto;font-size:1rem;line-height:1;}
-    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-
-    .wrap{position:relative;z-index:1;width:100%;max-width:500px;padding:24px;}
-
-    /* Brand */
-    .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px;}
-    .brand-icon{
-      width:54px;height:54px;border-radius:14px;
-      background:linear-gradient(135deg,#6c63ff,#764ba2);
-      display:flex;align-items:center;justify-content:center;
-      font-size:1.5rem;color:#fff;
-      box-shadow:0 8px 24px rgba(108,99,255,.4);
-    }
-    .brand-text h1{font-size:1.5rem;font-weight:800;color:#fff;margin:0;}
-    .brand-text span{font-size:.72rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.12em;font-weight:600;}
-
-    /* Warning banner */
-    .warn-banner{
-      background:rgba(245,158,11,.08);
-      border:1px solid rgba(245,158,11,.25);
-      border-radius:12px;padding:14px 16px;
-      display:flex;gap:12px;align-items:flex-start;
-      margin-bottom:20px;
-    }
-    .warn-banner i{color:#fbbf24;font-size:1rem;flex-shrink:0;margin-top:2px;}
-    .warn-banner p{font-size:.80rem;color:rgba(255,255,255,.45);line-height:1.6;margin:0;}
-    .warn-banner strong{color:#fbbf24;}
-
-    /* Card */
-    .card{
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      backdrop-filter:blur(20px);
-      border-radius:20px;padding:36px;
-      box-shadow:0 0 0 1px rgba(108,99,255,.08),0 32px 64px rgba(0,0,0,.5);
-    }
-    .card h2{font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:4px;}
-    .card .sub{color:rgba(255,255,255,.35);font-size:.87rem;margin-bottom:26px;}
-
-    /* Form */
-    .fg{margin-bottom:16px;}
-    .fg label{
-      display:flex;align-items:center;gap:6px;
-      font-size:.75rem;font-weight:700;color:rgba(255,255,255,.45);
-      text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;
-    }
-    .adm-input{
-      width:100%;background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:10px;padding:12px 16px;
-      font-size:.92rem;color:#fff;
-      outline:none;transition:all .2s;font-family:inherit;
-    }
-    .adm-input::placeholder{color:rgba(255,255,255,.18);}
-    .adm-input:focus{
-      border-color:rgba(108,99,255,.6);
-      background:rgba(108,99,255,.08);
-      box-shadow:0 0 0 3px rgba(108,99,255,.15);
-    }
-    .pw-wrap{position:relative;}
-    .pw-wrap .adm-input{padding-right:44px;}
-    .pw-toggle{
-      position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      background:none;border:none;color:rgba(255,255,255,.3);
-      cursor:pointer;font-size:.88rem;transition:color .2s;padding:4px;
-    }
-    .pw-toggle:hover{color:rgba(255,255,255,.6);}
-
-    /* Secret key field - highlighted */
-    .secret-fg .adm-input{
-      border-color:rgba(245,158,11,.25);
-      background:rgba(245,158,11,.05);
-    }
-    .secret-fg .adm-input:focus{
-      border-color:rgba(245,158,11,.5);
-      background:rgba(245,158,11,.08);
-      box-shadow:0 0 0 3px rgba(245,158,11,.12);
-    }
-    .hint{font-size:.72rem;color:rgba(255,255,255,.25);margin-top:5px;}
-
-    /* Password strength */
-    .strength-wrap{margin-top:6px;}
-    .strength-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:3px;}
-    .strength-fill{height:100%;border-radius:2px;transition:all .3s;}
-    .strength-text{font-size:.72rem;font-weight:600;}
-
-    /* Submit */
-    .submit-btn{
-      width:100%;padding:13px;
-      background:linear-gradient(135deg,#6c63ff,#764ba2);
-      border:none;border-radius:10px;color:#fff;
-      font-size:.95rem;font-weight:700;cursor:pointer;margin-top:8px;
-      display:flex;align-items:center;justify-content:center;gap:8px;
-      transition:all .2s;box-shadow:0 4px 16px rgba(108,99,255,.35);
-      font-family:inherit;
-    }
-    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(108,99,255,.45);}
-
-    /* Divider */
-    .divider{display:flex;align-items:center;gap:12px;margin:22px 0;}
-    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
-    .divider span{font-size:.72rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.08em;}
-
-    .footer-links{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:10px;}
-    .login-link{font-size:.82rem;color:rgba(255,255,255,.25);}
-    .login-link a{color:rgba(108,99,255,.8);text-decoration:none;font-weight:600;transition:color .2s;}
-    .login-link a:hover{color:#6c63ff;}
-    .back-link-adm{
-      display:flex;align-items:center;gap:6px;
-      font-size:.78rem;color:rgba(255,255,255,.18);
-      text-decoration:none;transition:color .2s;
-    }
-    .back-link-adm:hover{color:rgba(255,255,255,.45);}
   </style>
 </head>
-<body>
-  <div class="glow-bl"></div>
-
-  <!-- Flash messages -->
-  <div class="flash-wrap">
-    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
-      <% success.forEach(msg => { %>
-        <div class="adm-flash adm-flash-success">
-          <i class="fas fa-check-circle"></i> <%= msg %>
-          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
-        </div>
-      <% }) %>
-    <% } %>
-    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-      <% error.forEach(msg => { %>
-        <div class="adm-flash adm-flash-error">
-          <i class="fas fa-exclamation-circle"></i> <%= msg %>
-          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
-        </div>
-      <% }) %>
-    <% } %>
-  </div>
-
-  <div class="wrap">
-    <!-- Brand -->
-    <div class="brand">
-      <div class="brand-icon"><i class="fas fa-shield-halved"></i></div>
-      <div class="brand-text">
+<body class="auth-body">
+  <%- include('../partials/flash') %>
+  <div class="auth-container">
+    <div class="auth-left">
+      <div class="auth-brand">
+        <span class="brand-icon-lg">⚡</span>
         <h1>FreelanceHub</h1>
-        <span>Admin Registration</span>
+        <p>Your freelancing career starts here</p>
+      </div>
+      <div class="role-info">
+        <div class="role-card" id="clientInfo">
+          <i class="fas fa-building"></i>
+          <h3>Client</h3>
+          <p>Post projects, hire verified freelancers, track deliverables & milestones.</p>
+        </div>
+        <div class="role-card" id="freelancerInfo">
+          <i class="fas fa-laptop-code"></i>
+          <h3>Freelancer</h3>
+          <p>Showcase skills, submit project proposals, collaborate via chat & earn securely.</p>
+        </div>
       </div>
     </div>
 
-    <!-- Warning -->
-    <div class="warn-banner">
-      <i class="fas fa-triangle-exclamation"></i>
-      <p>
-        <strong>Restricted Access:</strong> A valid <strong>Admin Secret Key</strong> is required to create an admin account.
-        This key is set in your server's <code style="color:#fbbf24;background:rgba(245,158,11,.15);padding:1px 5px;border-radius:4px;">.env</code> file as <code style="color:#fbbf24;background:rgba(245,158,11,.15);padding:1px 5px;border-radius:4px;">ADMIN_SECRET_KEY</code>.
-      </p>
-    </div>
+    <div class="auth-right">
+      <div class="auth-card">
+        <h2>Create Account</h2>
+        <p class="auth-subtitle">Join thousands of verified clients and professionals</p>
 
-    <!-- Card -->
-    <div class="card">
-      <h2>Create Admin Account</h2>
-      <p class="sub">Fill in the details below to register a new administrator</p>
-
-      <form action="/auth/admin/register" method="POST">
-
-        <div class="fg">
-          <label><i class="fas fa-user"></i> Full Name</label>
-          <input type="text" name="name" class="adm-input" placeholder="Super Admin" required minlength="2">
-        </div>
-
-        <div class="fg">
-          <label><i class="fas fa-envelope"></i> Email Address</label>
-          <input type="email" name="email" class="adm-input" placeholder="admin@freelancehub.com" required>
-        </div>
-
-        <div class="fg">
-          <label><i class="fas fa-lock"></i> Password</label>
-          <div class="pw-wrap">
-            <input
-              type="password" name="password" id="ap1"
-              class="adm-input" placeholder="Min 8 characters"
-              required minlength="8"
-              oninput="checkStrength(this.value)"
-            >
-            <button type="button" class="pw-toggle" onclick="togglePw('ap1','icon1')">
-              <i class="fas fa-eye" id="icon1"></i>
-            </button>
+        <form action="/auth/register" method="POST" class="auth-form" id="registerForm">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Full Name</label>
+            <input type="text" name="name" placeholder="John Doe" required class="form-input" autocomplete="name">
           </div>
-          <div class="strength-wrap">
-            <div class="strength-bar"><div class="strength-fill" id="sFill"></div></div>
-            <span class="strength-text" id="sText"></span>
+
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email Address</label>
+            <input type="email" name="email" placeholder="you@domain.com" required class="form-input" autocomplete="email">
           </div>
-        </div>
 
-        <div class="fg">
-          <label><i class="fas fa-lock"></i> Confirm Password</label>
-          <div class="pw-wrap">
-            <input
-              type="password" name="confirmPassword" id="ap2"
-              class="adm-input" placeholder="Repeat password"
-              required oninput="checkMatch()"
-            >
-            <button type="button" class="pw-toggle" onclick="togglePw('ap2','icon2')">
-              <i class="fas fa-eye" id="icon2"></i>
-            </button>
+          <div class="form-group">
+            <label><i class="fas fa-lock"></i> Password</label>
+            <div class="input-with-icon">
+              <input type="password" name="password" id="regPassword" placeholder="Min 6 characters"
+                     required minlength="6" class="form-input" oninput="checkRegStrength(this.value)" autocomplete="new-password">
+              <button type="button" class="toggle-password" onclick="togglePass('regPassword')">
+                <i class="fas fa-eye" id="regPasswordIcon"></i>
+              </button>
+            </div>
+            <div class="strength-meter">
+              <div class="strength-meter-bar" id="regStrengthBar"></div>
+            </div>
           </div>
-          <div id="matchMsg" style="font-size:.72rem;margin-top:5px;"></div>
-        </div>
 
-        <div class="fg secret-fg">
-          <label><i class="fas fa-key"></i> Admin Secret Key</label>
-          <div class="pw-wrap">
-            <input
-              type="password" name="secretKey" id="ap3"
-              class="adm-input" placeholder="Enter the secret key from .env"
-              required
-            >
-            <button type="button" class="pw-toggle" onclick="togglePw('ap3','icon3')">
-              <i class="fas fa-eye" id="icon3"></i>
-            </button>
+          <div class="form-group">
+            <label><i class="fas fa-users"></i> I want to join as a...</label>
+            <div class="role-selector">
+              <label class="role-option">
+                <input type="radio" name="role" value="client" required checked>
+                <div class="role-option-card">
+                  <i class="fas fa-building"></i>
+                  <span>Client</span>
+                  <small>Hiring talent</small>
+                </div>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="role" value="freelancer" required>
+                <div class="role-option-card">
+                  <i class="fas fa-laptop-code"></i>
+                  <span>Freelancer</span>
+                  <small>Offering skills</small>
+                </div>
+              </label>
+            </div>
           </div>
-          <p class="hint"><i class="fas fa-info-circle"></i> Set <code>ADMIN_SECRET_KEY</code> in your .env file</p>
-        </div>
 
-        <button type="submit" class="submit-btn">
-          <i class="fas fa-user-shield"></i>
-          Create Admin Account
-        </button>
-      </form>
+          <button type="submit" class="btn btn-primary btn-full btn-lg">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+        </form>
 
-      <div class="divider"><span>already have access</span></div>
-
-      <div class="footer-links">
-        <p class="login-link">
-          Already an admin? <a href="/auth/admin/login">Sign In</a>
-        </p>
-        <a href="/auth/login" class="back-link-adm">
-          <i class="fas fa-arrow-left"></i> Back to main site login
+        <div class="auth-divider"><span>or sign up with</span></div>
+        <a href="/auth/google" class="btn btn-google btn-full">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20">
+          Sign up with Google
         </a>
+
+        <p class="auth-switch">
+          Already have an account? <a href="/auth/login">Login here</a>
+        </p>
+
+        <div class="admin-switch-link">
+          Administrator setup? <a href="/auth/admin/register"><i class="fas fa-shield-halved"></i> Create Admin Account</a>
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="/js/main.js"></script>
+  <script src="/js/theme.js"></script>
   <script>
-    function togglePw(id, iconId) {
-      const i = document.getElementById(id);
-      const icon = document.getElementById(iconId);
-      if (i.type === 'password') {
-        i.type = 'text';
-        icon.className = 'fas fa-eye-slash';
-      } else {
-        i.type = 'password';
-        icon.className = 'fas fa-eye';
-      }
-    }
-
-    function checkStrength(val) {
-      const fill = document.getElementById('sFill');
-      const text = document.getElementById('sText');
+    function checkRegStrength(val) {
+      const bar = document.getElementById('regStrengthBar');
       let score = 0;
-      if (val.length >= 8) score++;
-      if (val.length >= 12) score++;
-      if (/[A-Z]/.test(val)) score++;
-      if (/[0-9]/.test(val)) score++;
+      if (val.length >= 6) score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
       if (/[^A-Za-z0-9]/.test(val)) score++;
-      const levels = [
-        { pct:'0%', color:'transparent', label:'', lc:'' },
-        { pct:'25%', color:'#ef4444', label:'Weak', lc:'#ef4444' },
-        { pct:'50%', color:'#f59e0b', label:'Fair', lc:'#f59e0b' },
-        { pct:'75%', color:'#3b82f6', label:'Good', lc:'#3b82f6' },
-        { pct:'100%', color:'#22c55e', label:'Strong', lc:'#22c55e' }
-      ];
-      const lv = levels[Math.min(score, 4)];
-      fill.style.width = lv.pct;
-      fill.style.background = lv.color;
-      text.textContent = lv.label;
-      text.style.color = lv.lc;
-    }
 
-    function checkMatch() {
-      const p1 = document.getElementById('ap1').value;
-      const p2 = document.getElementById('ap2').value;
-      const msg = document.getElementById('matchMsg');
-      if (!p2) { msg.innerHTML = ''; return; }
-      if (p1 === p2) {
-        msg.innerHTML = '<span style="color:#86efac"><i class="fas fa-check"></i> Passwords match</span>';
+      const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'];
+      const widths = ['25%', '50%', '75%', '100%'];
+      if (val.length === 0) {
+        bar.style.width = '0%';
       } else {
-        msg.innerHTML = '<span style="color:#fca5a5"><i class="fas fa-times"></i> Passwords do not match</span>';
+        bar.style.width = widths[Math.min(score, 3)];
+        bar.style.backgroundColor = colors[Math.min(score, 3)];
       }
     }
-
-    // Auto dismiss flashes
-    document.querySelectorAll('.adm-flash').forEach(f => {
-      setTimeout(() => {
-        f.style.transition = 'opacity .3s';
-        f.style.opacity = '0';
-        setTimeout(() => f.remove(), 300);
-      }, 5000);
-    });
   </script>
 </body>
 </html>

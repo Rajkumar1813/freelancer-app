@@ -21,10 +21,24 @@ if (notifBtn && notifDropdown) {
   });
 }
 
-// Close dropdowns on outside click
+// ===== MOBILE SIDEBAR TOGGLE =====
+const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+const sidebar = document.querySelector('.sidebar');
+if (sidebarToggleBtn && sidebar) {
+  sidebarToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sidebar.classList.toggle('open');
+  });
+  sidebar.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
+
+// Close dropdowns & mobile sidebar on outside click
 document.addEventListener('click', () => {
   userDropdown?.classList.remove('open');
   notifDropdown?.classList.remove('open');
+  sidebar?.classList.remove('open');
 });
 
 // Auto-dismiss flash messages after 4 seconds

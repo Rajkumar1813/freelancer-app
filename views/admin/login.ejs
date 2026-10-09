@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - FreelanceHub</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+      background:#0a0a14;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow-x:hidden;
+    }
+    body::before{
+      content:'';
+      position:fixed;inset:0;
+      background-image:
+        linear-gradient(rgba(108,99,255,.07) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(108,99,255,.07) 1px,transparent 1px);
+      background-size:44px 44px;
+      pointer-events:none;z-index:0;
+    }
+    body::after{
+      content:'';
+      position:fixed;
+      width:700px;height:700px;border-radius:50%;
+      background:radial-gradient(circle,rgba(108,99,255,.13) 0%,transparent 70%);
+      top:-250px;right:-250px;pointer-events:none;z-index:0;
+    }
+    .glow-bl{
+      position:fixed;
+      width:600px;height:600px;border-radius:50%;
+      background:radial-gradient(circle,rgba(118,75,162,.10) 0%,transparent 70%);
+      bottom:-200px;left:-150px;pointer-events:none;z-index:0;
+    }
+    .flash-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+    .adm-flash{
+      display:flex;align-items:center;gap:10px;
+      padding:12px 18px;border-radius:10px;font-size:.87rem;font-weight:500;
+      max-width:340px;animation:slideIn .3s ease;
+    }
+    .adm-flash-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .adm-flash-success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .adm-flash-close{background:none;border:none;cursor:pointer;color:inherit;opacity:.6;margin-left:auto;font-size:1.1rem;line-height:1;}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+    .wrap{position:relative;z-index:1;width:100%;max-width:460px;padding:24px;}
+    .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px;}
+    .brand-icon{
+      width:52px;height:52px;border-radius:14px;
+      background:linear-gradient(135deg,#6c63ff,#764ba2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.5rem;color:#fff;
+      box-shadow:0 8px 24px rgba(108,99,255,.4);
+    }
+    .brand-text h1{font-size:1.5rem;font-weight:800;color:#fff;margin:0;letter-spacing:-.3px;}
+    .brand-text span{font-size:.72rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.12em;font-weight:600;}
+
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(20px);
+      border-radius:20px;
+      padding:36px;
+      box-shadow:0 0 0 1px rgba(108,99,255,.08),0 32px 64px rgba(0,0,0,.5);
+    }
+    .card h2{font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:4px;}
+    .card .sub{color:rgba(255,255,255,.45);font-size:.87rem;margin-bottom:26px;}
+
+    .fg{margin-bottom:18px;}
+    .fg label{
+      display:flex;align-items:center;gap:6px;
+      font-size:.75rem;font-weight:700;color:rgba(255,255,255,.55);
+      text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;
+    }
+    .adm-input{
+      width:100%;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:10px;
+      padding:12px 16px;
+      font-size:.92rem;color:#fff;
+      outline:none;transition:all .2s;font-family:inherit;
+    }
+    .adm-input::placeholder{color:rgba(255,255,255,.25);}
+    .adm-input:focus{
+      border-color:rgba(108,99,255,.8);
+      background:rgba(108,99,255,.08);
+      box-shadow:0 0 0 3px rgba(108,99,255,.2);
+    }
+    .pw-wrap{position:relative;}
+    .pw-wrap .adm-input{padding-right:44px;}
+    .pw-toggle{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;color:rgba(255,255,255,.4);
+      cursor:pointer;font-size:.9rem;transition:color .2s;padding:4px;
+    }
+    .pw-toggle:hover{color:rgba(255,255,255,.8);}
+
+    .submit-btn{
+      width:100%;padding:13px;
+      background:linear-gradient(135deg,#6c63ff,#764ba2);
+      border:none;border-radius:10px;color:#fff;
+      font-size:.95rem;font-weight:700;cursor:pointer;margin-top:6px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      transition:all .2s;
+      box-shadow:0 4px 16px rgba(108,99,255,.35);
+      letter-spacing:.02em;font-family:inherit;
+    }
+    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(108,99,255,.5);}
+    .submit-btn:active{transform:translateY(0);}
+
+    .sec-note{
+      background:rgba(108,99,255,.08);
+      border:1px solid rgba(108,99,255,.18);
+      border-radius:10px;padding:12px 14px;
+      display:flex;gap:10px;align-items:flex-start;margin-top:20px;
+    }
+    .sec-note i{color:rgba(108,99,255,.85);font-size:.85rem;margin-top:2px;flex-shrink:0;}
+    .sec-note p{font-size:.76rem;color:rgba(255,255,255,.4);line-height:1.5;margin:0;}
+
+    .divider{display:flex;align-items:center;gap:12px;margin:22px 0;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+    .divider span{font-size:.72rem;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;}
+
+    .footer-links{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+    .reg-link{font-size:.82rem;color:rgba(255,255,255,.4);}
+    .reg-link a{color:rgba(108,99,255,.9);text-decoration:none;font-weight:600;transition:color .2s;}
+    .reg-link a:hover{color:#fff;}
+    .back-link-adm{
+      display:flex;align-items:center;gap:6px;
+      font-size:.8rem;color:rgba(255,255,255,.4);
+      text-decoration:none;transition:color .2s;
+    }
+    .back-link-adm:hover{color:#fff;}
+  </style>
+</head>
+<body>
+  <div class="glow-bl"></div>
+
+  <!-- Flash messages -->
+  <div class="flash-wrap">
+    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+      <% success.forEach(msg => { %>
+        <div class="adm-flash adm-flash-success">
+          <i class="fas fa-check-circle"></i> <%= msg %>
+          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+      <% }) %>
+    <% } %>
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+      <% error.forEach(msg => { %>
+        <div class="adm-flash adm-flash-error">
+          <i class="fas fa-exclamation-circle"></i> <%= msg %>
+          <button class="adm-flash-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <div class="wrap">
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-shield-halved"></i></div>
+      <div class="brand-text">
+        <h1>FreelanceHub</h1>
+        <span>Admin Control Panel</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Admin Sign In</h2>
+      <p class="sub">Sign in with authorized administrator credentials</p>
+
+      <form action="/auth/admin/login" method="POST">
+        <div class="fg">
+          <label><i class="fas fa-envelope"></i> Admin Email</label>
+          <input
+            type="email" name="email" class="adm-input"
+            placeholder="fileshare1813@gmail.com"
+            required autocomplete="email"
+          >
+        </div>
+
+        <div class="fg">
+          <label><i class="fas fa-lock"></i> Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password" name="password" id="ap"
+              class="adm-input" placeholder="••••••••"
+              required autocomplete="current-password"
+            >
+            <button type="button" class="pw-toggle" onclick="togglePw()">
+              <i class="fas fa-eye" id="apIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-shield-alt"></i> Access Admin Dashboard
+        </button>
+      </form>
+
+      <div class="sec-note">
+        <i class="fas fa-shield-alt"></i>
+        <p>Restricted area. Default admin email: <code>fileshare1813@gmail.com</code> with password: <code>Admin@321</code>.</p>
+      </div>
+
+      <div class="divider"><span>navigation</span></div>
+
+      <div class="footer-links">
+        <p class="reg-link">
+          Need a new admin? <a href="/auth/admin/register">Create Admin Account</a>
+        </p>
+        <a href="/auth/login" class="back-link-adm">
+          <i class="fas fa-arrow-left"></i> Back to User Portal (Freelancers & Clients)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    function togglePw() {
+      const i = document.getElementById('ap');
+      const icon = document.getElementById('apIcon');
+      if (i.type === 'password') {
+        i.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        i.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+  </script>
+</body>
+</html>
