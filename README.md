@@ -55,15 +55,7 @@ Featuring escrow payments, real-time messaging, automated milestone reporting, r
 
 All demo accounts have been pre-configured and verified for testing:
 
-### 🛡️ Super Admin Account
-| Parameter | Value |
-| :--- | :--- |
-| **Email** | `fileshare1813@gmail.com` |
-| **Password** | `Admin@321` |
-| **Portal URL** | [http://localhost:3000/auth/admin/login](http://localhost:3000/auth/admin/login) |
-| **Privileges** | Full platform management, analytics, user ban/unban |
-
-### 👨‍💼 Client Account
+### 👨‍💼 Client Account (Test Account)
 | Parameter | Value |
 | :--- | :--- |
 | **Email** | `kumaq88@gmail.com` *(or `rishabhtyagi162@gmail.com`)* |
@@ -250,8 +242,6 @@ http://localhost:3000
 | :--- | :--- | :--- |
 | `/auth/login` | Public | Client and Freelancer authentication |
 | `/auth/register` | Public | Client and Freelancer account creation |
-| `/auth/admin/login` | Public (Admin) | Dedicated Super Admin login gateway |
-| `/auth/admin/register` | Public (Admin) | Admin registration requiring `ADMIN_SECRET_KEY` |
 | `/client/dashboard` | Client | Active projects, total spent & incoming proposals |
 | `/client/post-project` | Client | Create new project with deliverables and budget |
 | `/freelancer/dashboard` | Freelancer | Proposals overview, active jobs & daily earnings |

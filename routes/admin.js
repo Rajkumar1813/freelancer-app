@@ -22,6 +22,11 @@ router.get('/payments',               paymentCtrl.getAdminPayments);
 router.post('/payments/:id/release',  paymentCtrl.releasePayment);
 router.post('/payments/:id/complete', paymentCtrl.completePayment);
 
+// ── Admin Authorization Requests ─────────────────────────────────────────────
+router.get('/admin-requests',              adminController.getAdminRequests);
+router.post('/admin-requests/:id/approve', adminController.approveAdminRequest);
+router.post('/admin-requests/:id/reject',  adminController.rejectAdminRequest);
+
 // ── NEW: Unverified users list ────────────────────────────────────────────────
 router.get('/unverified-users', async (req, res) => {
   try {

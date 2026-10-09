@@ -90,10 +90,12 @@ router.post('/verify-account/resend', authController.resendVerifyOTP);
 // POST /auth/admin/register  → Process admin registration (requires secret key)
 // GET  /auth/admin/logout    → Logout admin
 
-router.get('/admin/login',    authController.getAdminLogin);
-router.post('/admin/login',   authController.postAdminLogin);
-router.get('/admin/register', authController.getAdminRegister);
-router.post('/admin/register',authController.postAdminRegister);
-router.get('/admin/logout',   authController.adminLogout);
+router.get('/admin/login',         authController.getAdminLogin);
+router.post('/admin/login',        authController.postAdminLogin);
+router.get('/admin/verify-pin',    authController.getAdminVerifyPin);
+router.post('/admin/verify-pin',   authController.postAdminVerifyPin);
+router.get('/admin/register',      authController.getAdminRegister);
+router.post('/admin/register',     authController.postAdminRegister);
+router.get('/admin/logout',        authController.adminLogout);
 
 module.exports = router;

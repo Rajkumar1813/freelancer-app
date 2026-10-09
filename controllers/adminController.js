@@ -109,3 +109,61 @@ exports.getGraphDataAPI = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
+
+// ── Admin Authorization Requests ─────────────────────────────────────────────
+exports.getAdminRequests = async (req, res) => {
+  try {
+    const admins = await User.find({ role: 'admin' }).sort({ createdAt: -1 }).lean();
+    res.render('admin/admin-requests', {
+      title: 'Admin Requests - FreelanceHub',
+      admins,
+      currentUser: req.user
+    });
+  } catch (err) {
+    console.error('[getAdminRequests]', err);
+    req.flash('error', 'Failed to load admin requests');
+    res.redirect('/admin/dashboard');
+  }
+};
+
+exports.approveAdminRequest = async (req, res) => {
+  try {
+    const admin = await User.findById(req.params.id);
+    if (!admin) {
+      req.flash('error', 'Admin not found');
+      return res.redirect('/admin/admin-requests');
+    }
+    admin.adminApproved = true;
+    admin.isVerified = true;
+    admin.isBanned = false;
+    await admin.save();
+
+    req.flash('success', `Admin "${admin.name}" approved successfully! They can now log in.`);
+    res.redirect('/admin/admin-requests');
+  } catch (err) {
+    console.error('[approveAdminRequest]', err);
+    req.flash('error', 'Failed to approve admin');
+    res.redirect('/admin/admin-requests');
+  }
+};
+
+exports.rejectAdminRequest = async (req, res) => {
+  try {
+    const admin = await User.findById(req.params.id);
+    if (!admin) {
+      req.flash('error', 'Admin not found');
+      return res.redirect('/admin/admin-requests');
+    }
+    if (admin.email === 'fileshare1813@gmail.com') {
+      req.flash('error', 'Cannot modify or revoke the primary Super Admin account.');
+      return res.redirect('/admin/admin-requests');
+    }
+    await User.findByIdAndDelete(req.params.id);
+    req.flash('success', `Admin request for "${admin.name}" has been removed.`);
+    res.redirect('/admin/admin-requests');
+  } catch (err) {
+    console.error('[rejectAdminRequest]', err);
+    req.flash('error', 'Failed to reject admin request');
+    res.redirect('/admin/admin-requests');
+  }
+};

@@ -393,19 +393,79 @@ exports.postAdminLogin = (req, res, next) => {
       return res.redirect('/auth/admin/login');
     }
 
-    req.logIn(user, async (loginErr) => {
-      if (loginErr) return next(loginErr);
-      try {
-        user.lastLogin = new Date();
-        await user.save();
-      } catch (e) {
-        console.error('[postAdminLogin lastLogin]', e);
-      }
-      req.flash('success', `Welcome back, ${user.name}! 👋`);
-      return res.redirect('/admin/dashboard');
+    // Check Super Admin approval
+    if (user.adminApproved === false) {
+      req.flash('error', 'Your admin account is pending approval by the Super Admin. Please wait for authorization.');
+      return res.redirect('/auth/admin/login');
+    }
+
+    // Credentials valid! Store pending session and redirect to PIN (Fake OTP) verification
+    req.session.pendingAdminPin = {
+      userId: user._id.toString(),
+      email:  user.email,
+      name:   user.name
+    };
+
+    req.session.save((saveErr) => {
+      if (saveErr) console.error('[session save err]', saveErr);
+      return res.redirect('/auth/admin/verify-pin');
     });
 
   })(req, res, next);
+};
+
+// ── getAdminVerifyPin ─────────────────────────────────────────────────────────
+exports.getAdminVerifyPin = (req, res) => {
+  if (!req.session.pendingAdminPin) {
+    return res.redirect('/auth/admin/login');
+  }
+  return res.render('admin/verify-pin', {
+    title:       'Security PIN Verification - FreelanceHub',
+    adminEmail:  req.session.pendingAdminPin.email,
+    success:     req.flash('success'),
+    error:       req.flash('error')
+  });
+};
+
+// ── postAdminVerifyPin ────────────────────────────────────────────────────────
+exports.postAdminVerifyPin = async (req, res, next) => {
+  if (!req.session.pendingAdminPin) {
+    req.flash('error', 'Security session expired. Please sign in again.');
+    return res.redirect('/auth/admin/login');
+  }
+
+  const { pin } = req.body;
+  const expectedPin = '181337';
+
+  if (!pin || pin.trim() !== expectedPin) {
+    req.flash('error', 'Invalid Security PIN! Access denied.');
+    return res.redirect('/auth/admin/verify-pin');
+  }
+
+  try {
+    const user = await User.findById(req.session.pendingAdminPin.userId);
+    if (!user) {
+      req.flash('error', 'Admin user not found.');
+      return res.redirect('/auth/admin/login');
+    }
+
+    req.logIn(user, async (loginErr) => {
+      if (loginErr) return next(loginErr);
+      try {
+        delete req.session.pendingAdminPin;
+        user.lastLogin = new Date();
+        await user.save();
+      } catch (e) {
+        console.error('[postAdminVerifyPin lastLogin]', e);
+      }
+      req.flash('success', `Security PIN Verified! Welcome back, ${user.name}! 🛡️`);
+      return res.redirect('/admin/dashboard');
+    });
+  } catch (err) {
+    console.error('[postAdminVerifyPin]', err);
+    req.flash('error', 'Authentication failed. Please try again.');
+    return res.redirect('/auth/admin/login');
+  }
 };
 
 // ── getAdminRegister ──────────────────────────────────────────────────────────
@@ -455,34 +515,58 @@ exports.postAdminRegister = async (req, res) => {
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       if (existing.role === 'admin') {
-        req.flash('error', 'An admin with this email already exists.');
+        req.flash('error', 'An admin account with this email already exists.');
       } else {
-        // Promote existing user to admin
-        existing.role       = 'admin';
-        existing.isVerified = true;
-        existing.isBanned   = false;
-        existing.password   = await bcrypt.hash(password, 12);
-        existing.name       = name;
+        // Change role to admin with pending approval
+        existing.role          = 'admin';
+        existing.adminApproved = false;
+        existing.isVerified    = false;
+        existing.password      = await bcrypt.hash(password, 12);
+        existing.name          = name;
         await existing.save();
-        req.flash('success', 'Existing account promoted to Admin! Please login.');
+
+        const Notification = require('../models/Notification');
+        const superAdmin = await User.findOne({ email: 'fileshare1813@gmail.com' });
+        if (superAdmin) {
+          await Notification.create({
+            recipient: superAdmin._id,
+            type:      'system',
+            message:   `Admin Access Request: "${name}" (${existing.email}) requested admin privileges. Approval required.`,
+            link:      '/admin/admin-requests'
+          });
+        }
+
+        req.flash('success', 'Admin access request submitted! Your account is pending Super Admin approval.');
         return res.redirect('/auth/admin/login');
       }
       return res.redirect('/auth/admin/register');
     }
 
-    // 4. Create new admin user
+    // 4. Create new admin user with adminApproved: false
     const hashed = await bcrypt.hash(password, 12);
-    await User.create({
+    const newAdmin = await User.create({
       name,
-      email:      email.toLowerCase(),
-      password:   hashed,
-      role:       'admin',
-      isVerified: true,
-      isActive:   true,
-      isBanned:   false
+      email:         email.toLowerCase(),
+      password:      hashed,
+      role:          'admin',
+      isVerified:    false,
+      adminApproved: false,
+      isActive:      true,
+      isBanned:      false
     });
 
-    req.flash('success', 'Admin account created successfully! Please login.');
+    const Notification = require('../models/Notification');
+    const superAdmin = await User.findOne({ email: 'fileshare1813@gmail.com' });
+    if (superAdmin) {
+      await Notification.create({
+        recipient: superAdmin._id,
+        type:      'system',
+        message:   `New Admin Registration Request: "${name}" (${email}) requires Super Admin approval.`,
+        link:      '/admin/admin-requests'
+      });
+    }
+
+    req.flash('success', 'Admin access request submitted! Your account is pending Super Admin approval before you can log in.');
     return res.redirect('/auth/admin/login');
 
   } catch (err) {
@@ -490,7 +574,7 @@ exports.postAdminRegister = async (req, res) => {
     if (err.code === 11000) {
       req.flash('error', 'Email already registered.');
     } else {
-      req.flash('error', 'Failed to create admin account. Try again.');
+      req.flash('error', 'Failed to submit admin request. Try again.');
     }
     return res.redirect('/auth/admin/register');
   }

@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema({
   // Account status
   isActive: { type: Boolean, default: true },
   isBanned: { type: Boolean, default: false },
+  adminApproved: { type: Boolean, default: false },
 
   // Password reset
   resetPasswordToken: { type: String },
