@@ -772,7 +772,7 @@ img { max-width: 100%; }
 }
 
 .sidebar-close-btn {
-  display: none;
+  display: none !important;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -786,6 +786,11 @@ img { max-width: 100%; }
 .sidebar-close-btn:hover {
   color: var(--danger);
   background: var(--secondary);
+}
+@media (max-width: 768px) {
+  .sidebar-close-btn {
+    display: inline-flex !important;
+  }
 }
 
 /* Super Admin & Manager Role Badges */

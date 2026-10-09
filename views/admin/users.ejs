@@ -1,168 +1,845 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    /* ================================================================
+       FREELANCEHUB — MANAGE USERS RESPONSIVE & PREMIUM STYLING
+       ================================================================ */
+    .users-page-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* ── KPI Metrics Cards ────────────────────────────────────────── */
+    .users-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+    .user-stat-card {
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: var(--radius-md, 14px);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .user-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .user-stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .icon-total { background: rgba(108, 99, 255, 0.12); color: var(--primary, #6c63ff); }
+    .icon-client { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    .icon-freelancer { background: rgba(34, 197, 94, 0.12); color: #22c55e; }
+    .icon-banned { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+
+    .user-stat-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .user-stat-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-primary, #1e293b);
+      line-height: 1.1;
+    }
+    .user-stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted, #94a3b8);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* ── Filter & Search Toolbar ──────────────────────────────────── */
+    .filter-card {
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: var(--radius-md, 14px);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .users-filter-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .filter-search-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .filter-search-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted, #94a3b8);
+      font-size: 0.95rem;
+    }
+    .filter-search-input {
+      width: 100%;
+      padding: 11px 16px 11px 40px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border, #e2e8f0);
+      background: var(--bg-main, #f8fafc);
+      color: var(--text-primary, #1e293b);
+      font-size: 0.92rem;
+      outline: none;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+    }
+    .filter-search-input:focus {
+      border-color: var(--primary, #6c63ff);
+      background: var(--bg-card, #ffffff);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+    }
+    .filter-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-select {
+      flex: 1 1 140px;
+      min-width: 120px;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border, #e2e8f0);
+      background: var(--bg-main, #f8fafc);
+      color: var(--text-primary, #1e293b);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+      cursor: pointer;
+    }
+    .filter-select:focus {
+      border-color: var(--primary, #6c63ff);
+    }
+    .filter-btn-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .view-mode-toggle {
+      margin-left: auto;
+      display: flex;
+      background: var(--bg-main, #f8fafc);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .view-btn {
+      background: none;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--text-muted, #94a3b8);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .view-btn.active {
+      background: var(--bg-card, #ffffff);
+      color: var(--primary, #6c63ff);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* ── Desktop Data Table Container ────────────────────────────── */
+    .users-table-desktop {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius-md, 14px);
+      border: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card, #ffffff);
+      box-shadow: var(--shadow-sm);
+    }
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      text-align: left;
+    }
+    .users-table th {
+      background: var(--secondary, #f0f4ff);
+      color: var(--text-secondary, #64748b);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      white-space: nowrap;
+    }
+    .users-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light, #f1f5f9);
+      color: var(--text-primary, #1e293b);
+      font-size: 0.88rem;
+      vertical-align: middle;
+    }
+    .users-table tbody tr:hover {
+      background: var(--secondary, #f0f4ff);
+    }
+    .users-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ── Password Badge Box ───────────────────────────────────────── */
+    .pw-badge-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(108, 99, 255, 0.06);
+      padding: 4px 8px;
+      border-radius: 7px;
+      border: 1px solid var(--border, #e2e8f0);
+      max-width: 100%;
+    }
+    .pw-txt {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-primary, #1e293b);
+      user-select: all;
+    }
+    .pw-btn-icon {
+      background: none;
+      border: none;
+      color: var(--primary, #6c63ff);
+      cursor: pointer;
+      padding: 3px 5px;
+      font-size: 0.82rem;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pw-btn-icon:hover {
+      background: rgba(108, 99, 255, 0.15);
+    }
+
+    /* ── Action Buttons (Desktop Table) ───────────────────────────── */
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: nowrap;
+    }
+    .btn-act {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card, #ffffff);
+      color: var(--text-primary, #1e293b);
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.18s ease;
+      text-decoration: none;
+    }
+    .btn-act:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .btn-act-view:hover { color: var(--primary, #6c63ff); border-color: var(--primary, #6c63ff); background: var(--secondary); }
+    .btn-act-pw:hover { color: #f59e0b; border-color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
+    .btn-act-ban { color: #d97706; border-color: rgba(217, 119, 6, 0.3); }
+    .btn-act-ban:hover { background: rgba(245, 158, 11, 0.15); color: #b45309; }
+    .btn-act-unban { color: #16a34a; border-color: rgba(22, 163, 74, 0.3); }
+    .btn-act-unban:hover { background: rgba(22, 163, 74, 0.15); color: #15803d; }
+    .btn-act-mgr { color: #0284c7; border-color: rgba(2, 132, 199, 0.3); }
+    .btn-act-mgr:hover { background: rgba(2, 132, 199, 0.15); color: #0369a1; }
+    .btn-act-del { color: #dc2626; border-color: rgba(220, 38, 38, 0.3); }
+    .btn-act-del:hover { background: rgba(220, 38, 38, 0.15); color: #b91c1c; }
+
+    /* ── Mobile Touch Cards (< 768px) ────────────────────────────── */
+    .user-mobile-cards {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+    }
+    .user-card-mob {
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: var(--radius-md, 14px);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .user-card-mob-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-card-mob-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid var(--border, #e2e8f0);
+    }
+    .user-card-mob-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .user-card-mob-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary, #1e293b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-card-mob-email {
+      font-size: 0.82rem;
+      color: var(--text-muted, #94a3b8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .user-card-mob-badges {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+
+    .user-card-mob-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--secondary, #f0f4ff);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+    }
+    .mob-detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .mob-detail-label {
+      font-size: 0.68rem;
+      color: var(--text-muted, #94a3b8);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .mob-detail-val {
+      font-weight: 600;
+      color: var(--text-primary, #1e293b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Mobile Action Buttons Bar */
+    .user-card-mob-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-light, #f1f5f9);
+    }
+    .mob-act-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card, #ffffff);
+      color: var(--text-primary, #1e293b);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      box-sizing: border-box;
+      min-height: 36px;
+    }
+    .mob-act-btn:hover {
+      background: var(--secondary, #f0f4ff);
+    }
+
+    /* ── Responsive Rules ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .users-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .user-stat-card {
+        padding: 12px 14px;
+        gap: 10px;
+      }
+      .user-stat-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+      }
+      .user-stat-value {
+        font-size: 1.25rem;
+      }
+      .filter-controls-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .filter-select[name="sort"] {
+        grid-column: 1 / -1;
+      }
+      .filter-btn-group {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+      .filter-btn-group button,
+      .filter-btn-group a {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+      }
+      .view-mode-toggle {
+        display: none !important;
+      }
+      .users-table-desktop {
+        display: none !important;
+      }
+      .user-mobile-cards {
+        display: flex !important;
+      }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .users-table {
+        min-width: 820px;
+      }
+    }
+  </style>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
   <%- include('../partials/flash') %>
+
   <div class="app-layout">
     <%- include('../partials/sidebar') %>
+
     <main class="main-content">
-      <div class="page-header">
-        <div><h1 class="page-title">Manage Users</h1><p class="page-subtitle">All registered users on the platform</p></div>
-      </div>
-      <!-- Filters -->
-      <div class="filter-bar">
-        <form action="/admin/users" method="GET" class="filter-form">
-          <input type="text" name="search" placeholder="Search by name or email..." class="filter-input" value="<%= filters.search || '' %>">
-          <select name="role" class="filter-select">
-            <option value="">All Roles</option>
-            <option value="client" <%= filters.role === 'client' ? 'selected' : '' %>>Client</option>
-            <option value="freelancer" <%= filters.role === 'freelancer' ? 'selected' : '' %>>Freelancer</option>
-          </select>
-          <select name="status" class="filter-select">
-            <option value="">All Status</option>
-            <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
-            <option value="banned" <%= filters.status === 'banned' ? 'selected' : '' %>>Banned</option>
-          </select>
-          <select name="sort" class="filter-select">
-            <option value="-createdAt" <%= filters.sort === '-createdAt' ? 'selected' : '' %>>Newest First</option>
-            <option value="createdAt" <%= filters.sort === 'createdAt' ? 'selected' : '' %>>Oldest First</option>
-            <option value="-rating" <%= filters.sort === '-rating' ? 'selected' : '' %>>Top Rated</option>
-          </select>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
-          <a href="/admin/users" class="btn btn-outline">Clear</a>
-        </form>
-      </div>
-      <div class="table-card">
-        <div class="table-header">
-          <h3>Users (<%= users.length %>)</h3>
+      <div class="users-page-wrap">
+
+        <!-- ── Page Header ──────────────────────────────────────────── -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">
+              <i class="fas fa-users-cog" style="color:var(--primary);"></i> Manage Users
+            </h1>
+            <p class="page-subtitle">
+              Monitor user credentials, moderate platform accounts, and delegate administrative roles
+            </p>
+          </div>
+          <div class="header-actions">
+            <span class="badge" style="background:var(--primary-light);color:var(--primary);font-size:0.85rem;padding:6px 14px;border-radius:20px;font-weight:700;">
+              <i class="fas fa-users"></i> <%= users.length %> <%= users.length === 1 ? 'Account' : 'Accounts' %>
+            </span>
+          </div>
         </div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Login Type</th>
-              <th>Password</th>
-              <th>Email</th>
-              <th>Joined</th>
-              <th>Projects</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% users.forEach(u => { %>
-            <tr>
-              <td>
-                <div class="user-cell">
-                  <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="table-avatar" onerror="this.src='/images/default-avatar.png'">
-                  <div>
-                    <div class="fw-bold"><%= u.name %></div>
-                    <div class="text-muted small"><%= u.location || '' %></div>
+
+        <!-- ── Top KPI Stat Cards ───────────────────────────────────── -->
+        <div class="users-stats-grid">
+          <div class="user-stat-card">
+            <div class="user-stat-icon icon-total">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="user-stat-info">
+              <div class="user-stat-value"><%= users.length %></div>
+              <div class="user-stat-label">Total Users</div>
+            </div>
+          </div>
+          <div class="user-stat-card">
+            <div class="user-stat-icon icon-client">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="user-stat-info">
+              <div class="user-stat-value"><%= users.filter(u => u.role === 'client').length %></div>
+              <div class="user-stat-label">Clients</div>
+            </div>
+          </div>
+          <div class="user-stat-card">
+            <div class="user-stat-icon icon-freelancer">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <div class="user-stat-info">
+              <div class="user-stat-value"><%= users.filter(u => u.role === 'freelancer').length %></div>
+              <div class="user-stat-label">Freelancers</div>
+            </div>
+          </div>
+          <div class="user-stat-card">
+            <div class="user-stat-icon icon-banned">
+              <i class="fas fa-user-slash"></i>
+            </div>
+            <div class="user-stat-info">
+              <div class="user-stat-value"><%= users.filter(u => u.isBanned).length %></div>
+              <div class="user-stat-label">Banned Users</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Filter & Search Toolbar ──────────────────────────────── -->
+        <div class="filter-card">
+          <form action="/admin/users" method="GET" class="users-filter-form" id="usersFilterForm">
+            <div class="filter-search-wrap">
+              <i class="fas fa-search"></i>
+              <input type="text" name="search" id="adminUserSearch" placeholder="Search by name, email, or skill..." class="filter-search-input" value="<%= filters.search || '' %>" autocomplete="off">
+            </div>
+
+            <div class="filter-controls-row">
+              <select name="role" class="filter-select">
+                <option value="">All Roles</option>
+                <option value="client" <%= filters.role === 'client' ? 'selected' : '' %>>Clients only</option>
+                <option value="freelancer" <%= filters.role === 'freelancer' ? 'selected' : '' %>>Freelancers only</option>
+              </select>
+
+              <select name="status" class="filter-select">
+                <option value="">All Statuses</option>
+                <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
+                <option value="banned" <%= filters.status === 'banned' ? 'selected' : '' %>>Banned</option>
+              </select>
+
+              <select name="sort" class="filter-select">
+                <option value="-createdAt" <%= filters.sort === '-createdAt' ? 'selected' : '' %>>Newest First</option>
+                <option value="createdAt" <%= filters.sort === 'createdAt' ? 'selected' : '' %>>Oldest First</option>
+                <option value="-rating" <%= filters.sort === '-rating' ? 'selected' : '' %>>Top Rated</option>
+              </select>
+
+              <div class="filter-btn-group">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter"></i> Filter</button>
+                <a href="/admin/users" class="btn btn-outline btn-sm"><i class="fas fa-undo"></i> Reset</a>
+              </div>
+
+              <!-- View mode toggle (Table / Grid on larger viewports) -->
+              <div class="view-mode-toggle" id="viewModeToggle">
+                <button type="button" class="view-btn active" id="btnViewTable" onclick="switchView('table')">
+                  <i class="fas fa-table"></i> Table
+                </button>
+                <button type="button" class="view-btn" id="btnViewCards" onclick="switchView('cards')">
+                  <i class="fas fa-th-large"></i> Cards
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- ================================================================
+             1. DESKTOP VIEW: FULL DATA TABLE (>= 768px)
+             ================================================================ -->
+        <div class="users-table-desktop" id="desktopTableView">
+          <div class="table-responsive">
+            <table class="users-table" id="adminUsersTable">
+              <thead>
+                <tr>
+                  <th>User Profile</th>
+                  <th>Role</th>
+                  <th>Auth Method</th>
+                  <th>Password</th>
+                  <th>Email</th>
+                  <th>Joined</th>
+                  <th>Projects</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (users.length === 0) { %>
+                  <tr>
+                    <td colspan="9" style="text-align:center;padding:48px 20px;color:var(--text-muted);">
+                      <i class="fas fa-search fa-2x" style="margin-bottom:10px;display:block;opacity:0.5;"></i>
+                      No users match your criteria. Try adjusting the search or filters.
+                    </td>
+                  </tr>
+                <% } %>
+
+                <% users.forEach(u => { %>
+                <tr class="user-row-item" data-search="<%= (u.name + ' ' + u.email + ' ' + u.role).toLowerCase() %>">
+                  <!-- User Profile -->
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="table-avatar" alt="<%= u.name %>" onerror="this.src='/images/default-avatar.png'">
+                      <div style="min-width:0;">
+                        <div style="font-weight:700;color:var(--text-primary);white-space:nowrap;"><%= u.name %></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);"><%= u.location || 'India' %></div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Role -->
+                  <td>
+                    <span class="badge role-<%= u.role %>"><%= u.role %></span>
+                  </td>
+
+                  <!-- Auth Method -->
+                  <td>
+                    <% if (u.authProvider === 'google' || u.googleId) { %>
+                      <span class="badge" style="background:rgba(66,133,244,0.12);color:#4285f4;border:1px solid rgba(66,133,244,0.3);font-size:0.75rem;">
+                        <i class="fab fa-google"></i> Google
+                      </span>
+                    <% } else { %>
+                      <span class="badge" style="background:rgba(108,99,255,0.12);color:#6c63ff;border:1px solid rgba(108,99,255,0.3);font-size:0.75rem;">
+                        <i class="fas fa-envelope"></i> Manual
+                      </span>
+                    <% } %>
+                  </td>
+
+                  <!-- Password -->
+                  <td>
+                    <% if (u.authProvider === 'google' || (u.googleId && !u.rawPassword && !u.password)) { %>
+                      <span style="font-size:0.78rem;color:var(--text-muted);font-style:italic;">
+                        <i class="fab fa-google"></i> None (Google)
+                      </span>
+                    <% } else { %>
+                      <div class="pw-badge-box" data-pw="<%= u.rawPassword || 'Password@123' %>">
+                        <span class="pw-txt">••••••••</span>
+                        <button type="button" class="pw-btn-icon" onclick="togglePw(this)" title="Show/Hide Password">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="pw-btn-icon" onclick="copyPw(this)" title="Copy Password">
+                          <i class="fas fa-copy"></i>
+                        </button>
+                      </div>
+                    <% } %>
+                  </td>
+
+                  <!-- Email -->
+                  <td style="color:var(--text-secondary);font-size:0.85rem;"><%= u.email %></td>
+
+                  <!-- Joined Date -->
+                  <td style="color:var(--text-muted);font-size:0.8rem;white-space:nowrap;">
+                    <%= new Date(u.createdAt).toLocaleDateString('en-IN') %>
+                  </td>
+
+                  <!-- Projects -->
+                  <td><strong><%= u.completedProjects || 0 %></strong> done</td>
+
+                  <!-- Status -->
+                  <td>
+                    <% if (u.isBanned) { %>
+                      <span class="badge badge-danger">Banned</span>
+                    <% } else if (u.isVerified) { %>
+                      <span class="badge badge-success">Active</span>
+                    <% } else { %>
+                      <span class="badge badge-warning">Unverified</span>
+                    <% } %>
+                  </td>
+
+                  <!-- Actions -->
+                  <td>
+                    <div class="user-actions">
+                      <a href="/profile/<%= u._id %>" class="btn-act btn-act-view" title="View Profile">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <button type="button" class="btn-act btn-act-pw" data-id="<%= u._id %>" data-name="<%= u.name %>" onclick="openResetPwFromEl(this)" title="Reset Password">
+                        <i class="fas fa-key"></i>
+                      </button>
+                      <form action="/admin/users/<%= u._id %>/ban" method="POST" style="display:inline;margin:0;">
+                        <button type="submit" class="btn-act <%= u.isBanned ? 'btn-act-unban' : 'btn-act-ban' %>" 
+                          onclick="return confirm('<%= u.isBanned ? 'Unban' : 'Ban' %> this user?')"
+                          title="<%= u.isBanned ? 'Unban Account' : 'Ban Account' %>">
+                          <i class="fas <%= u.isBanned ? 'fa-unlock' : 'fa-ban' %>"></i>
+                        </button>
+                      </form>
+                      <% if (typeof isSuperAdmin !== 'undefined' && isSuperAdmin) { %>
+                        <button type="button" class="btn-act btn-act-mgr" data-id="<%= u._id %>" data-name="<%= u.name %>" onclick="openMakeManagerFromEl(this)" title="Promote to Manager">
+                          <i class="fas fa-user-shield"></i>
+                        </button>
+                      <% } %>
+                      <form action="/admin/users/<%= u._id %>/delete" method="POST" style="display:inline;margin:0;">
+                        <button type="submit" class="btn-act btn-act-del" onclick="return confirm('Delete this user permanently? This cannot be undone.')" title="Delete Account">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ================================================================
+             2. MOBILE VIEW: SMART TOUCH CARDS (< 768px or Cards Mode)
+             ================================================================ -->
+        <div class="user-mobile-cards" id="mobileCardsView">
+          <% if (users.length === 0) { %>
+            <div style="background:var(--bg-card);padding:40px 20px;border-radius:14px;text-align:center;color:var(--text-muted);border:1px solid var(--border);">
+              <i class="fas fa-search fa-2x" style="margin-bottom:10px;display:block;opacity:0.5;"></i>
+              No users found matching your criteria.
+            </div>
+          <% } %>
+
+          <% users.forEach(u => { %>
+            <div class="user-card-mob user-card-item" data-search="<%= (u.name + ' ' + u.email + ' ' + u.role).toLowerCase() %>">
+              <!-- Top Row: Avatar & Basic Info -->
+              <div class="user-card-mob-top">
+                <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="user-card-mob-avatar" alt="<%= u.name %>" onerror="this.src='/images/default-avatar.png'">
+                <div class="user-card-mob-meta">
+                  <div class="user-card-mob-name"><%= u.name %></div>
+                  <div class="user-card-mob-email"><%= u.email %></div>
+                  <div class="user-card-mob-badges">
+                    <span class="badge role-<%= u.role %>" style="font-size:0.7rem;"><%= u.role %></span>
+                    <% if (u.isBanned) { %>
+                      <span class="badge badge-danger" style="font-size:0.7rem;">Banned</span>
+                    <% } else if (u.isVerified) { %>
+                      <span class="badge badge-success" style="font-size:0.7rem;">Active</span>
+                    <% } else { %>
+                      <span class="badge badge-warning" style="font-size:0.7rem;">Unverified</span>
+                    <% } %>
+                    <% if (u.authProvider === 'google' || u.googleId) { %>
+                      <span class="badge" style="background:rgba(66,133,244,0.12);color:#4285f4;font-size:0.68rem;">Google</span>
+                    <% } %>
                   </div>
                 </div>
-              </td>
-              <td><span class="badge role-<%= u.role %>"><%= u.role %></span></td>
-              <td>
-                <% if (u.authProvider === 'google' || u.googleId) { %>
-                  <span class="badge" style="background:rgba(66,133,244,0.12);color:#4285f4;border:1px solid rgba(66,133,244,0.3);font-size:0.78rem;font-weight:700;">
-                    <i class="fab fa-google"></i> Google Login
-                  </span>
-                <% } else { %>
-                  <span class="badge" style="background:rgba(108,99,255,0.12);color:#6c63ff;border:1px solid rgba(108,99,255,0.3);font-size:0.78rem;font-weight:700;">
-                    <i class="fas fa-envelope"></i> Manual Account
-                  </span>
-                <% } %>
-              </td>
-              <td>
-                <% if (u.authProvider === 'google' || (u.googleId && !u.rawPassword && !u.password)) { %>
-                  <span class="text-muted small" style="font-style:italic;">
-                    <i class="fab fa-google" style="color:#4285f4;"></i> None (Google)
-                  </span>
-                <% } else { %>
-                  <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(108,99,255,0.06);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">
-                    <span id="pw-txt-<%= u._id %>" style="font-family:monospace;font-size:0.86rem;font-weight:700;letter-spacing:1px;color:var(--text-primary);">••••••••</span>
-                    <button type="button" onclick="toggleUserPw('<%= u._id %>', '<%= (u.rawPassword || 'Password@123').replace(/'/g, '') %>')"
-                      style="background:none;border:none;color:#6c63ff;cursor:pointer;padding:2px 4px;font-size:0.85rem;" title="Show/Hide Password">
-                      <i class="fas fa-eye" id="pw-eye-<%= u._id %>"></i>
-                    </button>
-                    <button type="button" onclick="copyUserPw('<%= (u.rawPassword || 'Password@123').replace(/'/g, '') %>')"
-                      style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:2px 4px;font-size:0.82rem;" title="Copy Password">
-                      <i class="fas fa-copy"></i>
-                    </button>
-                  </div>
-                <% } %>
-              </td>
-              <td class="text-muted"><%= u.email %></td>
-              <td><%= new Date(u.createdAt).toLocaleDateString('en-IN') %></td>
-              <td><%= u.completedProjects || 0 %> done</td>
-              <td>
-                <% if (u.isBanned) { %><span class="badge badge-danger">Banned</span>
-                <% } else if (u.isVerified) { %><span class="badge badge-success">Active</span>
-                <% } else { %><span class="badge badge-warning">Unverified</span><% } %>
-              </td>
-              <td>
-                <div class="action-btns">
-                  <a href="/profile/<%= u._id %>" class="btn btn-sm btn-outline" title="View Profile"><i class="fas fa-eye"></i></a>
-                  <button type="button" onclick="openResetPwModal('<%= u._id %>', '<%= u.name.replace(/'/g, '') %>')" class="btn btn-sm btn-outline" title="Set New Password">
-                    <i class="fas fa-key"></i>
-                  </button>
-                  <form action="/admin/users/<%= u._id %>/ban" method="POST" style="display:inline">
-                    <button type="submit" class="btn btn-sm <%= u.isBanned ? 'btn-success' : 'btn-warning' %>" 
-                      onclick="return confirm('<%= u.isBanned ? 'Unban' : 'Ban' %> this user?')"
-                      title="<%= u.isBanned ? 'Unban' : 'Ban' %>">
-                      <i class="fas <%= u.isBanned ? 'fa-unlock' : 'fa-ban' %>"></i>
-                    </button>
-                  </form>
-                  <form action="/admin/users/<%= u._id %>/delete" method="POST" style="display:inline">
-                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this user permanently?')" title="Delete">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </form>
-                  <% if (typeof isSuperAdmin !== 'undefined' && isSuperAdmin) { %>
-                    <button type="button" onclick="openMakeManagerModal('<%= u._id %>', '<%= u.name.replace(/'/g, '') %>')" 
-                      class="btn btn-sm btn-outline" style="color:#0284c7;border-color:rgba(2,132,199,0.4);" title="Promote to Manager">
-                      <i class="fas fa-user-shield"></i>
-                    </button>
+              </div>
+
+              <!-- Quick Info Grid -->
+              <div class="user-card-mob-details">
+                <div class="mob-detail-item">
+                  <span class="mob-detail-label">Joined</span>
+                  <span class="mob-detail-val"><%= new Date(u.createdAt).toLocaleDateString('en-IN') %></span>
+                </div>
+                <div class="mob-detail-item">
+                  <span class="mob-detail-label">Projects</span>
+                  <span class="mob-detail-val"><%= u.completedProjects || 0 %> completed</span>
+                </div>
+
+                <!-- Password Row in Mobile Card -->
+                <div class="mob-detail-item" style="grid-column: span 2;">
+                  <span class="mob-detail-label">Password Credentials</span>
+                  <% if (u.authProvider === 'google' || (u.googleId && !u.rawPassword && !u.password)) { %>
+                    <span style="font-size:0.78rem;color:var(--text-muted);font-style:italic;">Google OAuth Account (No password)</span>
+                  <% } else { %>
+                    <div class="pw-badge-box" data-pw="<%= u.rawPassword || 'Password@123' %>" style="margin-top:2px;">
+                      <span class="pw-txt">••••••••</span>
+                      <button type="button" class="pw-btn-icon" onclick="togglePw(this)" title="Show/Hide">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button type="button" class="pw-btn-icon" onclick="copyPw(this)" title="Copy">
+                        <i class="fas fa-copy"></i>
+                      </button>
+                    </div>
                   <% } %>
                 </div>
-              </td>
-            </tr>
-            <% }) %>
-            <% if (users.length === 0) { %>
-              <tr><td colspan="9" class="empty-state">Users Not found</td></tr>
-            <% } %>
-          </tbody>
-        </table>
+              </div>
+
+              <!-- Mobile Action Toolbar -->
+              <div class="user-card-mob-actions">
+                <a href="/profile/<%= u._id %>" class="mob-act-btn" title="View Profile">
+                  <i class="fas fa-eye" style="color:var(--primary);"></i> Profile
+                </a>
+                <button type="button" class="mob-act-btn" data-id="<%= u._id %>" data-name="<%= u.name %>" onclick="openResetPwFromEl(this)" title="Reset Password">
+                  <i class="fas fa-key" style="color:#f59e0b;"></i> Password
+                </button>
+                <form action="/admin/users/<%= u._id %>/ban" method="POST" style="margin:0;">
+                  <button type="submit" class="mob-act-btn" style="width:100%;<%= u.isBanned ? 'color:#16a34a;' : 'color:#d97706;' %>"
+                    onclick="return confirm('<%= u.isBanned ? 'Unban' : 'Ban' %> this user?')">
+                    <i class="fas <%= u.isBanned ? 'fa-unlock' : 'fa-ban' %>"></i> <%= u.isBanned ? 'Unban' : 'Ban' %>
+                  </button>
+                </form>
+                <% if (typeof isSuperAdmin !== 'undefined' && isSuperAdmin) { %>
+                  <button type="button" class="mob-act-btn" data-id="<%= u._id %>" data-name="<%= u.name %>" onclick="openMakeManagerFromEl(this)" style="color:#0284c7;" title="Promote to Manager">
+                    <i class="fas fa-user-shield"></i> Manager
+                  </button>
+                <% } %>
+                <form action="/admin/users/<%= u._id %>/delete" method="POST" style="margin:0;">
+                  <button type="submit" class="mob-act-btn" style="color:#dc2626;width:100%;" onclick="return confirm('Delete this user permanently?')">
+                    <i class="fas fa-trash"></i> Delete
+                  </button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
       </div>
     </main>
   </div>
 
-  <!-- Admin Reset User Password Modal -->
-  <div class="modal-overlay" id="resetPwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;">
+  <!-- ================================================================
+       MODAL 1: RESET USER PASSWORD
+       ================================================================ -->
+  <div class="modal-overlay" id="resetPwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 40px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;color:var(--text-primary);">
           <i class="fas fa-key" style="color:#6c63ff;"></i> Reset Password
         </h3>
-        <button onclick="closeResetPwModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">×</button>
+        <button type="button" onclick="closeResetPwModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:2px 8px;">&times;</button>
       </div>
       <form id="resetPwForm" method="POST">
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">
-          Set a new manual password for <strong id="resetTargetName"></strong>:
+          Set a new manual password for <strong id="resetTargetName" style="color:var(--text-primary);"></strong>:
         </p>
         <div style="margin-bottom:16px;">
           <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">New Password</label>
-          <input type="text" name="newPassword" id="modalNewPwInput" class="form-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);" placeholder="Enter new password (min 6 chars)" required minlength="6">
+          <div style="position:relative;">
+            <input type="password" name="newPassword" id="modalNewPwInput" class="form-input" style="width:100%;padding:10px 40px 10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);box-sizing:border-box;" placeholder="Enter new password (min 6 chars)" required minlength="6">
+            <button type="button" onclick="toggleModalInputPw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+              <i class="fas fa-eye" id="modalPwEyeIcon"></i>
+            </button>
+          </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:10px;">
           <button type="button" onclick="closeResetPwModal()" class="btn btn-outline btn-sm">Cancel</button>
@@ -172,14 +849,16 @@
     </div>
   </div>
 
-  <!-- Make Manager Modal (Super Admin) -->
-  <div class="modal-overlay" id="makeManagerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:520px;width:100%;padding:24px;box-shadow:0 24px 48px rgba(0,0,0,0.5);max-height:92vh;overflow-y:auto;">
+  <!-- ================================================================
+       MODAL 2: MAKE MANAGER (SUPER ADMIN ONLY)
+       ================================================================ -->
+  <div class="modal-overlay" id="makeManagerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg-card,#18182f);border:1px solid var(--border);border-radius:16px;max-width:520px;width:100%;padding:22px;box-shadow:0 24px 48px rgba(0,0,0,0.5);max-height:92vh;overflow-y:auto;" onclick="event.stopPropagation()">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
         <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;color:var(--text-primary);">
           <i class="fas fa-user-shield" style="color:#0284c7;"></i> Promote to Manager
         </h3>
-        <button onclick="closeMakeManagerModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">&times;</button>
+        <button type="button" onclick="closeMakeManagerModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:2px 8px;">&times;</button>
       </div>
       <form id="makeManagerForm" method="POST">
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">
@@ -229,28 +908,61 @@
   <script src="/js/notifications.js"></script>
   <script src="/js/theme.js"></script>
   <script>
-    const USER_ID = '<%= currentUser._id %>';
-
-    function toggleUserPw(userId, realPassword) {
-      const txt = document.getElementById('pw-txt-' + userId);
-      const eye = document.getElementById('pw-eye-' + userId);
-      if (!txt || !eye) return;
+    // ── Safe Password Toggle ───────────────────────────────────────────
+    function togglePw(btnEl) {
+      const box = btnEl.closest('.pw-badge-box');
+      if (!box) return;
+      const txt = box.querySelector('.pw-txt');
+      const icon = btnEl.querySelector('i');
+      const realPw = box.dataset.pw || '';
 
       if (txt.textContent === '••••••••') {
-        txt.textContent = realPassword;
-        eye.className = 'fas fa-eye-slash';
+        txt.textContent = realPw;
+        if (icon) {
+          icon.className = 'fas fa-eye-slash';
+        }
       } else {
         txt.textContent = '••••••••';
-        eye.className = 'fas fa-eye';
+        if (icon) {
+          icon.className = 'fas fa-eye';
+        }
       }
     }
 
-    function copyUserPw(password) {
-      navigator.clipboard.writeText(password).then(() => {
-        alert('Password copied to clipboard!');
-      }).catch(() => {
-        prompt('Copy password:', password);
-      });
+    // ── Safe Password Copy with Visual Feedback ───────────────────────
+    function copyPw(btnEl) {
+      const box = btnEl.closest('.pw-badge-box');
+      if (!box) return;
+      const realPw = box.dataset.pw || '';
+      const icon = btnEl.querySelector('i');
+
+      const doFeedback = () => {
+        if (icon) {
+          icon.className = 'fas fa-check';
+          icon.style.color = '#22c55e';
+          setTimeout(() => {
+            icon.className = 'fas fa-copy';
+            icon.style.color = '';
+          }, 1500);
+        }
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(realPw).then(() => {
+          doFeedback();
+        }).catch(() => {
+          prompt('Copy password:', realPw);
+        });
+      } else {
+        prompt('Copy password:', realPw);
+      }
+    }
+
+    // ── Reset Password Modal Handlers ─────────────────────────────────
+    function openResetPwFromEl(btnEl) {
+      const id = btnEl.dataset.id;
+      const name = btnEl.dataset.name;
+      openResetPwModal(id, name);
     }
 
     function openResetPwModal(userId, userName) {
@@ -258,10 +970,30 @@
       document.getElementById('resetTargetName').textContent = userName;
       document.getElementById('modalNewPwInput').value = '';
       document.getElementById('resetPwModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('modalNewPwInput').focus(), 50);
     }
 
     function closeResetPwModal() {
       document.getElementById('resetPwModal').style.display = 'none';
+    }
+
+    function toggleModalInputPw() {
+      const inp = document.getElementById('modalNewPwInput');
+      const icon = document.getElementById('modalPwEyeIcon');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        inp.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+
+    // ── Make Manager Modal Handlers ───────────────────────────────────
+    function openMakeManagerFromEl(btnEl) {
+      const id = btnEl.dataset.id;
+      const name = btnEl.dataset.name;
+      openMakeManagerModal(id, name);
     }
 
     function openMakeManagerModal(userId, userName) {
@@ -272,6 +1004,72 @@
 
     function closeMakeManagerModal() {
       document.getElementById('makeManagerModal').style.display = 'none';
+    }
+
+    // Backdrop click listener to close modals
+    document.getElementById('resetPwModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('resetPwModal')) closeResetPwModal();
+    });
+    document.getElementById('makeManagerModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('makeManagerModal')) closeMakeManagerModal();
+    });
+
+    // Escape key listener to close modals
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeResetPwModal();
+        closeMakeManagerModal();
+      }
+    });
+
+    // ── View Mode Switcher (Table vs Cards on larger screens) ─────────
+    function switchView(mode) {
+      const tableEl = document.getElementById('desktopTableView');
+      const cardsEl = document.getElementById('mobileCardsView');
+      const btnTable = document.getElementById('btnViewTable');
+      const btnCards = document.getElementById('btnViewCards');
+
+      if (mode === 'cards') {
+        if (tableEl) tableEl.style.display = 'none';
+        if (cardsEl) cardsEl.style.display = 'flex';
+        if (btnTable) btnTable.classList.remove('active');
+        if (btnCards) btnCards.classList.add('active');
+        localStorage.setItem('adminUsersView', 'cards');
+      } else {
+        if (tableEl) tableEl.style.display = 'block';
+        if (cardsEl) cardsEl.style.display = 'none';
+        if (btnTable) btnTable.classList.add('active');
+        if (btnCards) btnCards.classList.remove('active');
+        localStorage.setItem('adminUsersView', 'table');
+      }
+    }
+
+    // Restore view preference on desktop (> 768px)
+    if (window.innerWidth > 768) {
+      const savedView = localStorage.getItem('adminUsersView');
+      if (savedView === 'cards') {
+        switchView('cards');
+      }
+    }
+
+    // ── Instant Live Filter on Typing ──────────────────────────────────
+    const searchInput = document.getElementById('adminUserSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.user-row-item');
+        const cards = document.querySelectorAll('.user-card-item');
+
+        rows.forEach(r => {
+          const text = r.dataset.search || '';
+          r.style.display = (!query || text.includes(query)) ? '' : 'none';
+        });
+
+        cards.forEach(c => {
+          const text = c.dataset.search || '';
+          c.style.display = (!query || text.includes(query)) ? '' : 'none';
+        });
+      });
     }
   </script>
 </body>
