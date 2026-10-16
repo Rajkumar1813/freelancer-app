@@ -327,12 +327,13 @@ async function runVerificationCron() {
       await user.save();
 
       const admins = await User.find({ role: 'admin' }).select('_id').lean();
-      for (const admin of admins) {
-        await Notification.create({
-          recipient: admin._id, type: 'system',
+      if (admins.length > 0) {
+        await Notification.insertMany(admins.map(admin => ({
+          recipient: admin._id,
+          type: 'system',
           message: `Auto-ban: "${user.name}" (${user.email}) — 48hrs me verify nahi kiya`,
           link: '/admin/unverified-users'
-        });
+        })));
       }
       console.log(`[Cron] Auto-banned: ${user.email}`);
     } catch (err) {
