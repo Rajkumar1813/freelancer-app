@@ -17,6 +17,11 @@ const initSocket = (server) => {
       if (userId) socket.join(`user_${userId}`);
     });
 
+    // Join admin room
+    socket.on('joinAdmin', () => {
+      socket.join('admin_room');
+    });
+
     // Join conversation room
     socket.on('joinConversation', (conversationId) => {
       if (conversationId) socket.join(`conv_${conversationId}`);

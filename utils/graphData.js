@@ -21,7 +21,7 @@ const getGraphData = async (role, userId) => {
   const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
   if (role === 'admin') {
-    const [projectRes, revenueRes, userRes] = await Promise.all([
+    const [projectRes, revenueRes, paymentRes, userRes] = await Promise.all([
       Project.aggregate([
         { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
@@ -48,6 +48,20 @@ const getGraphData = async (role, userId) => {
           }
         }
       ]),
+      Payment.aggregate([
+        {
+          $match: {
+            status: { $in: ['released', 'completed', 'paid'] },
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+            total: { $sum: { $ifNull: ['$totalAmount', 0] } }
+          }
+        }
+      ]),
       User.aggregate([
         { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
@@ -56,18 +70,42 @@ const getGraphData = async (role, userId) => {
 
     const projectMap = Object.fromEntries(projectRes.map(r => [r._id, r.count]));
     const revenueMap = Object.fromEntries(revenueRes.map(r => [r._id, r.total]));
-    const userMap = Object.fromEntries(userRes.map(r => [r._id, r.count]));
+    const payMap     = Object.fromEntries(paymentRes.map(r => [r._id, r.total]));
+    const userMap    = Object.fromEntries(userRes.map(r => [r._id, r.count]));
 
     const projectData = monthKeys.map(k => projectMap[k] || 0);
-    const revenueData = monthKeys.map(k => revenueMap[k] || 0);
-    const userGrowth = monthKeys.map(k => userMap[k] || 0);
+    const revenueData = monthKeys.map(k => Math.max(revenueMap[k] || 0, payMap[k] || 0));
+    const userGrowth  = monthKeys.map(k => userMap[k] || 0);
 
-    return { labels, projectData, revenueData, userGrowth, role: 'admin' };
+    const totalProjects = projectData.reduce((a, b) => a + b, 0);
+    const totalRevenue  = revenueData.reduce((a, b) => a + b, 0);
+    const totalUsers    = userGrowth.reduce((a, b) => a + b, 0);
+    const hasData       = totalProjects > 0 || totalRevenue > 0 || totalUsers > 0;
+
+    return {
+      labels,
+      projectData,
+      revenueData,
+      userGrowth,
+      role: 'admin',
+      summary: {
+        totalProjects,
+        totalRevenue,
+        totalUsers,
+        hasData,
+        currencySymbol: '₹'
+      }
+    };
 
   } else if (role === 'client') {
-    const clientObjId = new mongoose.Types.ObjectId(userId);
+    let clientObjId;
+    try {
+      clientObjId = new mongoose.Types.ObjectId(userId);
+    } catch (_) {
+      clientObjId = userId;
+    }
 
-    const [projectRes, spentRes] = await Promise.all([
+    const [projectRes, spentRes, paySpentRes] = await Promise.all([
       Project.aggregate([
         { $match: { client: clientObjId, createdAt: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
@@ -94,30 +132,102 @@ const getGraphData = async (role, userId) => {
             total: { $sum: { $ifNull: ['$amountPaid', { $ifNull: ['$budget', 0] }] } }
           }
         }
+      ]),
+      Payment.aggregate([
+        {
+          $match: {
+            client: clientObjId,
+            status: { $in: ['paid', 'released', 'completed'] },
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+            total: { $sum: { $ifNull: ['$totalAmount', 0] } }
+          }
+        }
       ])
     ]);
 
-    const projectMap = Object.fromEntries(projectRes.map(r => [r._id, r.count]));
-    const spentMap = Object.fromEntries(spentRes.map(r => [r._id, r.total]));
+    const projectMap  = Object.fromEntries(projectRes.map(r => [r._id, r.count]));
+    const spentMap    = Object.fromEntries(spentRes.map(r => [r._id, r.total]));
+    const paySpentMap = Object.fromEntries(paySpentRes.map(r => [r._id, r.total]));
 
     const projectData = monthKeys.map(k => projectMap[k] || 0);
-    const revenueData = monthKeys.map(k => spentMap[k] || 0);
+    const revenueData = monthKeys.map(k => Math.max(spentMap[k] || 0, paySpentMap[k] || 0));
 
-    return { labels, projectData, revenueData, role: 'client' };
+    const totalProjects = projectData.reduce((a, b) => a + b, 0);
+    const totalSpent    = revenueData.reduce((a, b) => a + b, 0);
+    const hasData       = totalProjects > 0 || totalSpent > 0;
+
+    return {
+      labels,
+      projectData,
+      revenueData,
+      role: 'client',
+      summary: {
+        totalProjects,
+        totalRevenue: totalSpent,
+        hasData,
+        currencySymbol: '₹'
+      }
+    };
 
   } else if (role === 'freelancer') {
-    const flObjId = new mongoose.Types.ObjectId(userId);
+    let flObjId;
+    try {
+      flObjId = new mongoose.Types.ObjectId(userId);
+    } catch (_) {
+      flObjId = userId;
+    }
 
-    const [propRes, earningsRes, paymentRes] = await Promise.all([
+    const [propRes, hiredRes, earningsRes, paymentRes] = await Promise.all([
       Proposal.aggregate([
         {
           $match: {
             freelancer: flObjId,
             status: 'accepted',
-            createdAt: { $gte: startDate, $lte: endDate }
+            $or: [
+              { updatedAt: { $gte: startDate, $lte: endDate } },
+              { createdAt: { $gte: startDate, $lte: endDate } }
+            ]
           }
         },
-        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m',
+                date: { $ifNull: ['$updatedAt', '$createdAt'] }
+              }
+            },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      Project.aggregate([
+        {
+          $match: {
+            hiredFreelancer: flObjId,
+            status: { $in: ['in_progress', 'completed'] },
+            $or: [
+              { updatedAt: { $gte: startDate, $lte: endDate } },
+              { createdAt: { $gte: startDate, $lte: endDate } }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m',
+                date: { $ifNull: ['$updatedAt', '$createdAt'] }
+              }
+            },
+            count: { $sum: 1 }
+          }
+        }
       ]),
       Project.aggregate([
         {
@@ -159,17 +269,30 @@ const getGraphData = async (role, userId) => {
       ])
     ]);
 
-    const propMap = Object.fromEntries(propRes.map(r => [r._id, r.count]));
-    const earnMap = Object.fromEntries(earningsRes.map(r => [r._id, r.total]));
-    const payMap = Object.fromEntries(paymentRes.map(r => [r._id, r.total]));
+    const propMap  = Object.fromEntries(propRes.map(r => [r._id, r.count]));
+    const hiredMap = Object.fromEntries(hiredRes.map(r => [r._id, r.count]));
+    const earnMap  = Object.fromEntries(earningsRes.map(r => [r._id, r.total]));
+    const payMap   = Object.fromEntries(paymentRes.map(r => [r._id, r.total]));
 
-    const projectData = monthKeys.map(k => propMap[k] || 0);
-    const revenueData = monthKeys.map(k => {
-      const pEarn = earnMap[k] || 0;
-      return pEarn > 0 ? pEarn : (payMap[k] || 0);
-    });
+    const projectData = monthKeys.map(k => Math.max(propMap[k] || 0, hiredMap[k] || 0));
+    const revenueData = monthKeys.map(k => Math.max(earnMap[k] || 0, payMap[k] || 0));
 
-    return { labels, projectData, revenueData, role: 'freelancer' };
+    const totalProjectsWon = projectData.reduce((a, b) => a + b, 0);
+    const totalEarnings    = revenueData.reduce((a, b) => a + b, 0);
+    const hasData          = totalProjectsWon > 0 || totalEarnings > 0;
+
+    return {
+      labels,
+      projectData,
+      revenueData,
+      role: 'freelancer',
+      summary: {
+        totalProjects: totalProjectsWon,
+        totalRevenue: totalEarnings,
+        hasData,
+        currencySymbol: '₹'
+      }
+    };
   }
 };
 

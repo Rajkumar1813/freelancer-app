@@ -20,9 +20,12 @@ router.post('/users/:id/reset-password', requirePermission('manageUsers'), admin
 router.get('/projects',                 requirePermission('manageProjects'), adminController.getProjects);
 
 // ── Settings (Requires 'manageSettings' permission) ─────────────────────────
-router.get('/settings', requirePermission('manageSettings'), (req, res) => {
-  res.render('admin/settings', { title: 'Platform Settings - FreelanceHub' });
-});
+router.get('/settings',                      requirePermission('manageSettings'), adminController.getSettings);
+router.post('/settings',                     requirePermission('manageSettings'), adminController.updateSettings);
+router.get('/settings/stats',                requirePermission('manageSettings'), adminController.getSettingsStats);
+router.post('/settings/test-email',          requirePermission('manageSettings'), adminController.sendTestEmail);
+router.post('/settings/clear-notifications', requirePermission('manageSettings'), adminController.clearOldNotifications);
+router.get('/settings/export-users',         requirePermission('manageSettings'), adminController.exportUsersCSV);
 
 // ── Payments Management (Requires 'managePayments' permission) ─────────────
 router.get('/payments',               requirePermission('managePayments'), paymentCtrl.getAdminPayments);

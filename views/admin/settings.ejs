@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title || 'Admin Settings - FreelanceHub' %></title>
+  <title><%= title || 'Platform Settings - FreelanceHub' %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/theme.css">
@@ -32,6 +32,9 @@
     .stat-highlight i { font-size:2rem; opacity:0.85; }
     .stat-highlight-val { font-size:1.8rem; font-weight:800; }
     .stat-highlight-label { font-size:0.85rem; opacity:0.85; }
+    .settings-alert { padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:16px; display:none; align-items:center; gap:10px; font-size:0.9rem; }
+    .settings-alert.success { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; display:flex; }
+    .settings-alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; display:flex; }
   </style>
 </head>
 <body class="app-body">
@@ -41,9 +44,11 @@
     <%- include('../partials/sidebar') %>
     <main class="main-content">
       <div class="page-header">
-        <div><h1 class="page-title">Platform Settings</h1><p class="page-subtitle">Configure FreelanceHub</p></div>
-        <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save Changes</button>
+        <div><h1 class="page-title">Platform Settings</h1><p class="page-subtitle">Configure FreelanceHub Platform Parameters</p></div>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveSettings()"><i class="fas fa-save"></i> Save Changes</button>
       </div>
+
+      <div id="settingsAlert" class="settings-alert"></div>
 
       <div class="settings-grid">
         <!-- Settings Nav -->
@@ -62,25 +67,37 @@
           <div class="settings-section active" id="section-general">
             <div class="settings-card">
               <h3><i class="fas fa-info-circle"></i> Platform Info</h3>
-              <div class="form-group"><label>Platform Name</label><input type="text" class="form-input" value="FreelanceHub" id="platformName"></div>
-              <div class="form-group"><label>Tagline</label><input type="text" class="form-input" value="Connect. Create. Collaborate." id="tagline"></div>
-              <div class="form-group"><label>Support Email</label><input type="email" class="form-input" placeholder="support@freelancehub.com" id="supportEmail"></div>
-              <div class="form-group"><label>Platform URL</label><input type="url" class="form-input" value="<%= process?.env?.APP_URL || 'http://localhost:3000' %>" id="platformUrl"></div>
+              <div class="form-group">
+                <label>Platform Name</label>
+                <input type="text" class="form-input" value="<%= settings.platformName || 'FreelanceHub' %>" id="platformName">
+              </div>
+              <div class="form-group">
+                <label>Tagline</label>
+                <input type="text" class="form-input" value="<%= settings.tagline || 'Connect. Create. Collaborate.' %>" id="tagline">
+              </div>
+              <div class="form-group">
+                <label>Support Email</label>
+                <input type="email" class="form-input" value="<%= settings.supportEmail || 'support@freelancehub.com' %>" id="supportEmail">
+              </div>
+              <div class="form-group">
+                <label>Platform URL</label>
+                <input type="url" class="form-input" value="<%= settings.platformUrl || (process?.env?.APP_URL || 'http://localhost:3000') %>" id="platformUrl">
+              </div>
             </div>
             <div class="settings-card">
-              <h3><i class="fas fa-rupee-sign"></i> Commission Settings</h3>
+              <h3><i class="fas fa-rupee-sign"></i> Commission & Budget</h3>
               <div class="form-group">
                 <label>Platform Commission (%)</label>
-                <input type="number" class="form-input" value="10" min="0" max="50" step="0.5" id="commissionRate">
-                <small class="form-hint">Percentage taken from each completed project payment</small>
+                <input type="number" class="form-input" value="<%= settings.commissionRate ?? 10 %>" min="0" max="50" step="0.5" id="commissionRate">
+                <small class="form-hint">Percentage deducted from each completed project payment as platform fee</small>
               </div>
               <div class="form-group">
                 <label>Minimum Project Budget (₹)</label>
-                <input type="number" class="form-input" value="500" min="0" id="minBudget">
+                <input type="number" class="form-input" value="<%= settings.minBudget ?? 500 %>" min="0" id="minBudget">
               </div>
               <div class="form-group">
                 <label>Maximum Project Budget (₹)</label>
-                <input type="number" class="form-input" value="5000000" id="maxBudget">
+                <input type="number" class="form-input" value="<%= settings.maxBudget ?? 5000000 %>" id="maxBudget">
               </div>
             </div>
           </div>
@@ -88,33 +105,33 @@
           <!-- Email -->
           <div class="settings-section" id="section-email">
             <div class="settings-card">
-              <h3><i class="fas fa-envelope"></i> Email Configuration</h3>
+              <h3><i class="fas fa-envelope"></i> Email Configuration (SMTP)</h3>
               <div class="form-row">
-                <div class="form-group"><label>SMTP Host</label><input type="text" class="form-input" value="smtp.gmail.com" id="smtpHost"></div>
-                <div class="form-group"><label>SMTP Port</label><input type="number" class="form-input" value="587" id="smtpPort"></div>
+                <div class="form-group"><label>SMTP Host</label><input type="text" class="form-input" value="<%= settings.smtpHost || 'smtp.gmail.com' %>" id="smtpHost"></div>
+                <div class="form-group"><label>SMTP Port</label><input type="number" class="form-input" value="<%= settings.smtpPort ?? 587 %>" id="smtpPort"></div>
               </div>
-              <div class="form-group"><label>From Email</label><input type="email" class="form-input" placeholder="noreply@freelancehub.com" id="fromEmail"></div>
-              <div class="form-group"><label>From Name</label><input type="text" class="form-input" value="FreelanceHub" id="fromName"></div>
-              <div class="form-group"><label>OTP Expiry (minutes)</label><input type="number" class="form-input" value="10" min="5" max="60" id="otpExpiry"></div>
-              <button class="btn btn-outline" onclick="testEmail()"><i class="fas fa-paper-plane"></i> Send Test Email</button>
+              <div class="form-group"><label>From Email</label><input type="email" class="form-input" value="<%= settings.fromEmail || 'noreply@freelancehub.com' %>" id="fromEmail"></div>
+              <div class="form-group"><label>From Name</label><input type="text" class="form-input" value="<%= settings.fromName || 'FreelanceHub' %>" id="fromName"></div>
+              <div class="form-group"><label>OTP Expiry (minutes)</label><input type="number" class="form-input" value="<%= settings.otpExpiry ?? 10 %>" min="1" max="60" id="otpExpiry"></div>
+              <button class="btn btn-outline" id="testEmailBtn" onclick="testEmail()"><i class="fas fa-paper-plane"></i> Send Test Email</button>
             </div>
             <div class="settings-card">
-              <h3><i class="fas fa-mail-bulk"></i> Email Notifications</h3>
+              <h3><i class="fas fa-mail-bulk"></i> Automated Email Notifications</h3>
               <div class="toggle-row">
                 <div><div class="toggle-label">New Registration</div><div class="toggle-desc">Send welcome email to new users</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="notif_newReg" <%= settings.emailNotifs?.newRegistration ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">New Proposal</div><div class="toggle-desc">Notify clients when they receive a proposal</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="notif_newProp" <%= settings.emailNotifs?.newProposal ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">Project Completed</div><div class="toggle-desc">Send confirmation on project completion</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="notif_projComp" <%= settings.emailNotifs?.projectCompleted ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">Daily Reports</div><div class="toggle-desc">Email clients when a daily report is submitted</div></div>
-                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="notif_dailyRep" <%= settings.emailNotifs?.dailyReports ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
             </div>
           </div>
@@ -122,51 +139,51 @@
           <!-- Security -->
           <div class="settings-section" id="section-security">
             <div class="settings-card">
-              <h3><i class="fas fa-shield-alt"></i> Security Settings</h3>
+              <h3><i class="fas fa-shield-alt"></i> Security Policies</h3>
               <div class="toggle-row">
                 <div><div class="toggle-label">Require Email Verification</div><div class="toggle-desc">Users must verify email before accessing platform</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="sec_emailVerify" <%= settings.security?.requireEmailVerification ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">Allow Google OAuth</div><div class="toggle-desc">Enable Sign in with Google</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="sec_googleOAuth" <%= settings.security?.allowGoogleOAuth ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">Auto-ban on Reports</div><div class="toggle-desc">Auto-ban users after 5 abuse reports</div></div>
-                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="sec_autoBan" <%= settings.security?.autoBanOnReports ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
             </div>
             <div class="settings-card">
-              <h3><i class="fas fa-clock"></i> Session & Token</h3>
-              <div class="form-group"><label>Session Duration (days)</label><input type="number" class="form-input" value="7" min="1" max="30" id="sessionDays"></div>
-              <div class="form-group"><label>JWT Expiry (days)</label><input type="number" class="form-input" value="7" min="1" max="90" id="jwtExpiry"></div>
-              <div class="form-group"><label>Max Login Attempts</label><input type="number" class="form-input" value="5" min="3" max="20" id="maxLoginAttempts"></div>
+              <h3><i class="fas fa-clock"></i> Session & Token Lifecycle</h3>
+              <div class="form-group"><label>Session Duration (days)</label><input type="number" class="form-input" value="<%= settings.security?.sessionDays ?? 7 %>" min="1" max="90" id="sessionDays"></div>
+              <div class="form-group"><label>JWT Expiry (days)</label><input type="number" class="form-input" value="<%= settings.security?.jwtExpiry ?? 7 %>" min="1" max="90" id="jwtExpiry"></div>
+              <div class="form-group"><label>Max Login Attempts</label><input type="number" class="form-input" value="<%= settings.security?.maxLoginAttempts ?? 5 %>" min="3" max="20" id="maxLoginAttempts"></div>
             </div>
           </div>
 
           <!-- Notifications -->
           <div class="settings-section" id="section-notifications">
             <div class="settings-card">
-              <h3><i class="fas fa-bell"></i> In-App Notifications</h3>
+              <h3><i class="fas fa-bell"></i> In-App Live Notifications</h3>
               <div class="toggle-row">
                 <div><div class="toggle-label">New Message</div><div class="toggle-desc">Notify when user receives a chat message</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="inapp_msg" <%= settings.inAppNotifs?.newMessage ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">New Proposal</div><div class="toggle-desc">Notify clients on new proposals</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="inapp_prop" <%= settings.inAppNotifs?.newProposal ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
-                <div><div class="toggle-label">Hired Notification</div><div class="toggle-desc">Notify freelancer when hired</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <div><div class="toggle-label">Hired Notification</div><div class="toggle-desc">Notify freelancer when hired for a project</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="inapp_hired" <%= settings.inAppNotifs?.hiredNotification ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
-                <div><div class="toggle-label">Daily Report Submitted</div><div class="toggle-desc">Notify client on daily report</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <div><div class="toggle-label">Daily Report Submitted</div><div class="toggle-desc">Notify client on freelancer daily reports</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="inapp_rep" <%= settings.inAppNotifs?.dailyReportSubmitted ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
-                <div><div class="toggle-label">Payment Notifications</div><div class="toggle-desc">Notify on project payment completion</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <div><div class="toggle-label">Payment Notifications</div><div class="toggle-desc">Notify on milestone / escrow / payout status</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="inapp_pay" <%= settings.inAppNotifs?.paymentNotifications ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
             </div>
           </div>
@@ -174,53 +191,53 @@
           <!-- Platform -->
           <div class="settings-section" id="section-platform">
             <div class="settings-card">
-              <h3><i class="fas fa-sliders-h"></i> Platform Features</h3>
+              <h3><i class="fas fa-sliders-h"></i> Platform Feature Toggles</h3>
               <div class="toggle-row">
-                <div><div class="toggle-label">Allow New Registrations</div><div class="toggle-desc">Toggle to pause new sign-ups</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <div><div class="toggle-label">Allow New Registrations</div><div class="toggle-desc">Toggle to allow or pause new sign-ups</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="plat_allowReg" <%= settings.platformFeatures?.allowNewRegistrations ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
-                <div><div class="toggle-label">Maintenance Mode</div><div class="toggle-desc">Show maintenance page to all users</div></div>
-                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+                <div><div class="toggle-label">Maintenance Mode</div><div class="toggle-desc">Show maintenance notice to all non-admin users</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="plat_maint" <%= settings.platformFeatures?.maintenanceMode ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
-                <div><div class="toggle-label">Realtime Graphs</div><div class="toggle-desc">Enable socket-based live graph updates</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <div><div class="toggle-label">Realtime Graphs</div><div class="toggle-desc">Enable live graph and dashboard socket updates</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="plat_rtGraphs" <%= settings.platformFeatures?.realtimeGraphs ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
               <div class="toggle-row">
                 <div><div class="toggle-label">Profile Privacy</div><div class="toggle-desc">Allow freelancers to hide profiles from search</div></div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="plat_privacy" <%= settings.platformFeatures?.profilePrivacy ? 'checked' : '' %>><span class="toggle-slider"></span></label>
               </div>
             </div>
             <div class="settings-card">
               <h3><i class="fas fa-project-diagram"></i> Project Limits</h3>
-              <div class="form-group"><label>Max Active Projects per Client</label><input type="number" class="form-input" value="20" min="1" id="maxProjects"></div>
+              <div class="form-group"><label>Max Active Projects per Client</label><input type="number" class="form-input" value="<%= settings.platformFeatures?.maxProjects ?? 20 %>" min="1" id="maxProjects"></div>
               <div class="form-group"><label>Max Proposals per Freelancer per Project</label><input type="number" class="form-input" value="1" min="1" max="1" disabled></div>
-              <div class="form-group"><label>Max Skills per User</label><input type="number" class="form-input" value="20" min="5" max="50" id="maxSkills"></div>
+              <div class="form-group"><label>Max Skills per User</label><input type="number" class="form-input" value="<%= settings.platformFeatures?.maxSkills ?? 20 %>" min="5" max="50" id="maxSkills"></div>
             </div>
           </div>
 
           <!-- Stats -->
           <div class="settings-section" id="section-stats">
             <div class="settings-card">
-              <h3><i class="fas fa-database"></i> Platform Statistics</h3>
+              <h3><i class="fas fa-database"></i> Live Platform Statistics</h3>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
                 <div class="stat-highlight"><i class="fas fa-users"></i><div><div class="stat-highlight-val" id="sTotal">—</div><div class="stat-highlight-label">Total Users</div></div></div>
                 <div class="stat-highlight" style="background:linear-gradient(135deg,#22c55e,#16a34a)"><i class="fas fa-briefcase"></i><div><div class="stat-highlight-val" id="sProjects">—</div><div class="stat-highlight-label">Projects</div></div></div>
-                <div class="stat-highlight" style="background:linear-gradient(135deg,#3b82f6,#2563eb)"><i class="fas fa-rupee-sign"></i><div><div class="stat-highlight-val" id="sRevenue">—</div><div class="stat-highlight-label">Revenue</div></div></div>
+                <div class="stat-highlight" style="background:linear-gradient(135deg,#3b82f6,#2563eb)"><i class="fas fa-rupee-sign"></i><div><div class="stat-highlight-val" id="sRevenue">—</div><div class="stat-highlight-label">Platform Revenue</div></div></div>
               </div>
-              <button class="btn btn-outline" onclick="refreshStats()"><i class="fas fa-sync"></i> Refresh Stats</button>
+              <button class="btn btn-outline" id="refreshStatsBtn" onclick="refreshStats()"><i class="fas fa-sync"></i> Refresh Stats</button>
             </div>
             <div class="settings-card">
               <h3><i class="fas fa-tools"></i> Maintenance Actions</h3>
               <div style="display:flex;flex-direction:column;gap:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-light)">
                   <div><div class="fw-bold">Clear Old Notifications</div><div class="text-muted small">Remove notifications older than 30 days</div></div>
-                  <button class="btn btn-sm btn-outline" onclick="confirmAction('Clear old notifications?')"><i class="fas fa-trash"></i> Clear</button>
+                  <button class="btn btn-sm btn-outline text-danger" id="clearNotifsBtn" onclick="clearNotifications()"><i class="fas fa-trash"></i> Clear</button>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;">
-                  <div><div class="fw-bold">Export User Data (CSV)</div><div class="text-muted small">Download all user records</div></div>
-                  <button class="btn btn-sm btn-outline"><i class="fas fa-download"></i> Export</button>
+                  <div><div class="fw-bold">Export User Data (CSV)</div><div class="text-muted small">Download all platform user records in CSV format</div></div>
+                  <a href="/admin/settings/export-users" class="btn btn-sm btn-outline"><i class="fas fa-download"></i> Export CSV</a>
                 </div>
               </div>
             </div>
@@ -239,46 +256,183 @@
     function showSection(name, el) {
       document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById('section-' + name).classList.add('active');
-      el.classList.add('active');
+      const target = document.getElementById('section-' + name);
+      if (target) target.classList.add('active');
+      if (el) el.classList.add('active');
+
+      if (name === 'stats') {
+        refreshStats();
+      }
     }
 
-    function saveSettings() {
-      const btn = event.target;
+    function showAlert(type, message) {
+      const box = document.getElementById('settingsAlert');
+      if (!box) return;
+      box.className = 'settings-alert ' + type;
+      box.innerHTML = (type === 'success' ? '<i class="fas fa-check-circle"></i> ' : '<i class="fas fa-exclamation-circle"></i> ') + message;
+      box.style.display = 'flex';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        box.style.display = 'none';
+      }, 5000);
+    }
+
+    async function saveSettings() {
+      const btn = document.getElementById('saveBtn');
+      const origHtml = btn.innerHTML;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
       btn.disabled = true;
-      setTimeout(() => {
-        btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-        btn.classList.add('btn-success');
-        btn.classList.remove('btn-primary');
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-          btn.classList.remove('btn-success');
-          btn.classList.add('btn-primary');
-          btn.disabled = false;
-        }, 2000);
-      }, 800);
+
+      const payload = {
+        platformName: document.getElementById('platformName')?.value,
+        tagline: document.getElementById('tagline')?.value,
+        supportEmail: document.getElementById('supportEmail')?.value,
+        platformUrl: document.getElementById('platformUrl')?.value,
+        commissionRate: document.getElementById('commissionRate')?.value,
+        minBudget: document.getElementById('minBudget')?.value,
+        maxBudget: document.getElementById('maxBudget')?.value,
+        smtpHost: document.getElementById('smtpHost')?.value,
+        smtpPort: document.getElementById('smtpPort')?.value,
+        fromEmail: document.getElementById('fromEmail')?.value,
+        fromName: document.getElementById('fromName')?.value,
+        otpExpiry: document.getElementById('otpExpiry')?.value,
+        emailNotifs: {
+          newRegistration: document.getElementById('notif_newReg')?.checked,
+          newProposal: document.getElementById('notif_newProp')?.checked,
+          projectCompleted: document.getElementById('notif_projComp')?.checked,
+          dailyReports: document.getElementById('notif_dailyRep')?.checked
+        },
+        security: {
+          requireEmailVerification: document.getElementById('sec_emailVerify')?.checked,
+          allowGoogleOAuth: document.getElementById('sec_googleOAuth')?.checked,
+          autoBanOnReports: document.getElementById('sec_autoBan')?.checked,
+          sessionDays: document.getElementById('sessionDays')?.value,
+          jwtExpiry: document.getElementById('jwtExpiry')?.value,
+          maxLoginAttempts: document.getElementById('maxLoginAttempts')?.value
+        },
+        inAppNotifs: {
+          newMessage: document.getElementById('inapp_msg')?.checked,
+          newProposal: document.getElementById('inapp_prop')?.checked,
+          hiredNotification: document.getElementById('inapp_hired')?.checked,
+          dailyReportSubmitted: document.getElementById('inapp_rep')?.checked,
+          paymentNotifications: document.getElementById('inapp_pay')?.checked
+        },
+        platformFeatures: {
+          allowNewRegistrations: document.getElementById('plat_allowReg')?.checked,
+          maintenanceMode: document.getElementById('plat_maint')?.checked,
+          realtimeGraphs: document.getElementById('plat_rtGraphs')?.checked,
+          profilePrivacy: document.getElementById('plat_privacy')?.checked,
+          maxProjects: document.getElementById('maxProjects')?.value,
+          maxSkills: document.getElementById('maxSkills')?.value
+        }
+      };
+
+      try {
+        const res = await fetch('/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+          btn.classList.add('btn-success');
+          btn.classList.remove('btn-primary');
+          showAlert('success', data.message || 'Settings saved successfully!');
+          setTimeout(() => {
+            btn.innerHTML = origHtml;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+            btn.disabled = false;
+          }, 2000);
+        } else {
+          throw new Error(data.message || 'Failed to save settings');
+        }
+      } catch (err) {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        showAlert('error', err.message || 'Error saving settings');
+      }
     }
 
-    function testEmail() {
-      alert('Test email feature requires backend integration with your SMTP config in .env');
+    async function testEmail() {
+      const btn = document.getElementById('testEmailBtn');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending Test...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/admin/settings/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: document.getElementById('supportEmail')?.value })
+        });
+        const data = await res.json();
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        if (data.success) {
+          showAlert('success', data.message);
+        } else {
+          showAlert('error', data.message || 'Failed to send test email');
+        }
+      } catch (err) {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        showAlert('error', 'Network error sending test email: ' + err.message);
+      }
     }
 
-    function confirmAction(msg) {
-      if (confirm(msg)) alert('Action completed (demo mode)');
+    async function clearNotifications() {
+      if (!confirm('Are you sure you want to delete notifications older than 30 days?')) return;
+      const btn = document.getElementById('clearNotifsBtn');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/admin/settings/clear-notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: 30 })
+        });
+        const data = await res.json();
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        if (data.success) {
+          showAlert('success', data.message);
+        } else {
+          showAlert('error', data.message || 'Failed to clear notifications');
+        }
+      } catch (err) {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        showAlert('error', 'Error clearing notifications: ' + err.message);
+      }
     }
 
     async function refreshStats() {
+      const btn = document.getElementById('refreshStatsBtn');
+      if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+
       try {
-        const r = await fetch('/admin/graph-data');
+        const r = await fetch('/admin/settings/stats');
         const data = await r.json();
-        if (data.success) {
-          document.getElementById('sTotal').textContent = '—';
-          document.getElementById('sProjects').textContent = '—';
-          document.getElementById('sRevenue').textContent = '—';
+        if (data.success && data.stats) {
+          document.getElementById('sTotal').textContent = Number(data.stats.totalUsers || 0).toLocaleString('en-IN');
+          document.getElementById('sProjects').textContent = Number(data.stats.totalProjects || 0).toLocaleString('en-IN');
+          document.getElementById('sRevenue').textContent = '₹' + Number(data.stats.totalRevenue || 0).toLocaleString('en-IN');
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error('Failed to refresh stats:', e);
+      } finally {
+        if (btn) btn.innerHTML = '<i class="fas fa-sync"></i> Refresh Stats';
+      }
     }
+
+    // Load initial stats immediately
+    document.addEventListener('DOMContentLoaded', () => {
+      refreshStats();
+    });
   </script>
 </body>
 </html>

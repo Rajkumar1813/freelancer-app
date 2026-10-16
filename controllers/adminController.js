@@ -2,6 +2,8 @@ const User = require('../models/User');
 const Project = require('../models/Project');
 const Proposal = require('../models/Proposal');
 const Notification = require('../models/Notification');
+const Payment = require('../models/Payment');
+const Setting = require('../models/Setting');
 const { getGraphData } = require('../utils/graphData');
 const { getIO } = require('../config/socket');
 const { getPagination } = require('../utils/pagination');
@@ -148,8 +150,8 @@ exports.deleteUser = async (req, res) => {
 exports.getGraphDataAPI = async (req, res) => {
   try {
     const data = await getGraphData('admin', req.user._id);
-    // Emit to all admin sockets too
-    try { getIO().emit('graphUpdate', data); } catch(e) {}
+    // Emit only to admin room sockets to avoid leaking/overwriting client/freelancer dashboards
+    try { getIO().to('admin_room').emit('graphUpdate', data); } catch(e) {}
     res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({ success: false });
@@ -350,5 +352,196 @@ exports.resetUserPassword = async (req, res) => {
     console.error('[resetUserPassword]', err);
     req.flash('error', 'Failed to update user password');
     return res.redirect('/admin/users');
+  }
+};
+
+// ── Settings Management ──────────────────────────────────────────────────────
+exports.getSettings = async (req, res) => {
+  try {
+    const settings = await Setting.getSettings();
+    res.render('admin/settings', {
+      title: 'Platform Settings - FreelanceHub',
+      settings,
+      currentUser: req.user
+    });
+  } catch (err) {
+    console.error('[getSettings]', err);
+    req.flash('error', 'Failed to load settings');
+    res.redirect('/admin/dashboard');
+  }
+};
+
+exports.updateSettings = async (req, res) => {
+  try {
+    let settings = await Setting.getSettings();
+    const b = req.body || {};
+
+    if (b.platformName !== undefined) settings.platformName = b.platformName.trim();
+    if (b.tagline !== undefined) settings.tagline = b.tagline.trim();
+    if (b.supportEmail !== undefined) settings.supportEmail = b.supportEmail.trim();
+    if (b.platformUrl !== undefined) settings.platformUrl = b.platformUrl.trim();
+
+    if (b.commissionRate !== undefined && b.commissionRate !== '') settings.commissionRate = Number(b.commissionRate);
+    if (b.minBudget !== undefined && b.minBudget !== '') settings.minBudget = Number(b.minBudget);
+    if (b.maxBudget !== undefined && b.maxBudget !== '') settings.maxBudget = Number(b.maxBudget);
+
+    if (b.smtpHost !== undefined) settings.smtpHost = b.smtpHost.trim();
+    if (b.smtpPort !== undefined && b.smtpPort !== '') settings.smtpPort = Number(b.smtpPort);
+    if (b.fromEmail !== undefined) settings.fromEmail = b.fromEmail.trim();
+    if (b.fromName !== undefined) settings.fromName = b.fromName.trim();
+    if (b.otpExpiry !== undefined && b.otpExpiry !== '') settings.otpExpiry = Number(b.otpExpiry);
+
+    if (b.emailNotifs) {
+      settings.emailNotifs.newRegistration  = Boolean(b.emailNotifs.newRegistration);
+      settings.emailNotifs.newProposal      = Boolean(b.emailNotifs.newProposal);
+      settings.emailNotifs.projectCompleted = Boolean(b.emailNotifs.projectCompleted);
+      settings.emailNotifs.dailyReports     = Boolean(b.emailNotifs.dailyReports);
+    }
+
+    if (b.security) {
+      settings.security.requireEmailVerification = Boolean(b.security.requireEmailVerification);
+      settings.security.allowGoogleOAuth         = Boolean(b.security.allowGoogleOAuth);
+      settings.security.autoBanOnReports         = Boolean(b.security.autoBanOnReports);
+      if (b.security.sessionDays !== undefined && b.security.sessionDays !== '') settings.security.sessionDays = Number(b.security.sessionDays);
+      if (b.security.jwtExpiry !== undefined && b.security.jwtExpiry !== '') settings.security.jwtExpiry = Number(b.security.jwtExpiry);
+      if (b.security.maxLoginAttempts !== undefined && b.security.maxLoginAttempts !== '') settings.security.maxLoginAttempts = Number(b.security.maxLoginAttempts);
+    }
+
+    if (b.inAppNotifs) {
+      settings.inAppNotifs.newMessage           = Boolean(b.inAppNotifs.newMessage);
+      settings.inAppNotifs.newProposal          = Boolean(b.inAppNotifs.newProposal);
+      settings.inAppNotifs.hiredNotification    = Boolean(b.inAppNotifs.hiredNotification);
+      settings.inAppNotifs.dailyReportSubmitted = Boolean(b.inAppNotifs.dailyReportSubmitted);
+      settings.inAppNotifs.paymentNotifications = Boolean(b.inAppNotifs.paymentNotifications);
+    }
+
+    if (b.platformFeatures) {
+      settings.platformFeatures.allowNewRegistrations = Boolean(b.platformFeatures.allowNewRegistrations);
+      settings.platformFeatures.maintenanceMode       = Boolean(b.platformFeatures.maintenanceMode);
+      settings.platformFeatures.realtimeGraphs        = Boolean(b.platformFeatures.realtimeGraphs);
+      settings.platformFeatures.profilePrivacy        = Boolean(b.platformFeatures.profilePrivacy);
+      if (b.platformFeatures.maxProjects !== undefined && b.platformFeatures.maxProjects !== '') settings.platformFeatures.maxProjects = Number(b.platformFeatures.maxProjects);
+      if (b.platformFeatures.maxSkills !== undefined && b.platformFeatures.maxSkills !== '') settings.platformFeatures.maxSkills = Number(b.platformFeatures.maxSkills);
+    }
+
+    await settings.save();
+    return res.json({ success: true, message: 'Platform settings saved successfully!' });
+  } catch (err) {
+    console.error('[updateSettings]', err);
+    return res.status(500).json({ success: false, message: 'Failed to save settings: ' + err.message });
+  }
+};
+
+exports.getSettingsStats = async (req, res) => {
+  try {
+    const [totalUsers, totalProjects, totalPayments, completedProjects] = await Promise.all([
+      User.countDocuments({ role: { $ne: 'admin' } }),
+      Project.countDocuments(),
+      Payment.find({ status: { $in: ['released', 'completed', 'paid'] } }).select('totalAmount platformFee freelancerAmount'),
+      Project.find({ status: 'completed' }).select('amountPaid budget')
+    ]);
+
+    let totalRevenue = 0;
+    if (totalPayments.length > 0) {
+      totalRevenue = totalPayments.reduce((acc, p) => acc + (p.platformFee || Math.round((p.totalAmount || 0) * 0.1)), 0);
+    } else {
+      totalRevenue = completedProjects.reduce((acc, p) => acc + Math.round((p.amountPaid || p.budget || 0) * 0.1), 0);
+    }
+
+    return res.json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalProjects,
+        totalRevenue
+      }
+    });
+  } catch (err) {
+    console.error('[getSettingsStats]', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.sendTestEmail = async (req, res) => {
+  try {
+    const transporter = require('../config/nodemailer');
+    const settings = await Setting.getSettings();
+
+    const recipient = req.body.email || settings.supportEmail || req.user.email;
+    const info = await transporter.sendMail({
+      from: `"${settings.fromName || 'FreelanceHub'}" <${process.env.EMAIL_USER}>`,
+      to: recipient,
+      subject: `[FreelanceHub] Test Email Configuration Verified`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #6c63ff; margin-top: 0;">FreelanceHub SMTP Test Successful</h2>
+          <p>Hello <strong>${req.user.name}</strong>,</p>
+          <p>This is a confirmation message verifying that your platform email dispatch system is connected and working correctly.</p>
+          <div style="background: #f8fafc; padding: 14px 18px; border-radius: 8px; margin: 18px 0; font-size: 0.9em; color: #475569; border-left: 4px solid #6c63ff;">
+            <p style="margin: 4px 0;"><strong>Host:</strong> ${settings.smtpHost || process.env.EMAIL_HOST || 'smtp.gmail.com'}</p>
+            <p style="margin: 4px 0;"><strong>Port:</strong> ${settings.smtpPort || process.env.EMAIL_PORT || 587}</p>
+            <p style="margin: 4px 0;"><strong>From Name:</strong> ${settings.fromName || 'FreelanceHub'}</p>
+            <p style="margin: 4px 0;"><strong>Sent At:</strong> ${new Date().toLocaleString('en-IN')}</p>
+          </div>
+          <p style="color: #64748b; font-size: 0.85em; margin-bottom: 0;">FreelanceHub Platform Administration</p>
+        </div>
+      `
+    });
+
+    return res.json({
+      success: true,
+      message: `Test email successfully sent to ${recipient} (Message ID: ${info.messageId})`
+    });
+  } catch (err) {
+    console.error('[sendTestEmail]', err);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to send test email: ${err.message}`
+    });
+  }
+};
+
+exports.clearOldNotifications = async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 30;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const result = await Notification.deleteMany({ createdAt: { $lt: cutoff } });
+    return res.json({
+      success: true,
+      deletedCount: result.deletedCount || 0,
+      message: `Successfully cleared ${result.deletedCount || 0} notifications older than ${days} days.`
+    });
+  } catch (err) {
+    console.error('[clearOldNotifications]', err);
+    return res.status(500).json({ success: false, message: 'Failed to clear notifications: ' + err.message });
+  }
+};
+
+exports.exportUsersCSV = async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 }).lean();
+
+    const headers = ['ID', 'Name', 'Email', 'Role', 'Verified', 'Banned', 'Total Earnings (INR)', 'Total Spent (INR)', 'Created At'];
+    const rows = users.map(u => [
+      `"${u._id}"`,
+      `"${(u.name || '').replace(/"/g, '""')}"`,
+      `"${(u.email || '').replace(/"/g, '""')}"`,
+      `"${u.role || ''}"`,
+      u.isVerified ? 'Yes' : 'No',
+      u.isBanned ? 'Yes' : 'No',
+      u.totalEarnings || 0,
+      u.totalSpent || 0,
+      `"${u.createdAt ? new Date(u.createdAt).toISOString() : ''}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="freelancehub-users-${new Date().toISOString().slice(0,10)}.csv"`);
+    return res.send(csvContent);
+  } catch (err) {
+    console.error('[exportUsersCSV]', err);
+    req.flash('error', 'Failed to export user records');
+    return res.redirect('/admin/settings');
   }
 };
