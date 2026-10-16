@@ -5,11 +5,11 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="/js/chart.umd.min.js"></script>
-  <script>if (typeof Chart === 'undefined') { document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>'); }</script>
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/chart.umd.min.js" defer></script>
+  <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
@@ -151,7 +151,7 @@
                 <% recentUsers.forEach(u => { %>
                   <tr>
                     <td><div class="user-cell">
-                      <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="table-avatar" onerror="this.src='/images/default-avatar.png'">
+                      <img src="<%= u.googleAvatar || '/avatar/' + u._id %>" class="table-avatar" loading="lazy" onerror="this.src='/images/default-avatar.png'">
                       <%= u.name %>
                     </div></td>
                     <td><span class="badge role-<%= u.role %>"><%= u.role %></span></td>
@@ -194,9 +194,9 @@
     const USER_ROLE = 'admin';
     const GRAPH_API_URL = '/admin/graph-data';
   </script>
-  <script src="/js/main.js"></script>
-  <script src="/js/charts.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/charts.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
 </body>
 </html>

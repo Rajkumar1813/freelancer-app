@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
@@ -69,7 +70,7 @@
                   <td>
                     <div class="user-cell">
                       <img src="<%= admin.googleAvatar || (admin.avatar ? '/avatar/' + admin._id : '/images/default-avatar.png') %>"
-                           class="table-avatar" alt="<%= admin.name %>" onerror="this.src='/images/default-avatar.png'">
+                           class="table-avatar" alt="<%= admin.name %>" loading="lazy" onerror="this.src='/images/default-avatar.png'">
                       <div>
                         <strong><%= admin.name %></strong>
                         <% if (isSuper) { %>
@@ -336,8 +337,8 @@
     }
   </script>
 
-  <script src="/js/main.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
 </body>
 </html>

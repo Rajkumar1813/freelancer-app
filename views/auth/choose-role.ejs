@@ -6,6 +6,7 @@
   <title><%= typeof title !== 'undefined' ? title : 'Choose Your Account Type - FreelanceHub' %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     /* Reset & Viewport Base */
@@ -446,7 +447,7 @@
       <% if (authUser) { %>
         <div>
           <div class="user-pill">
-            <img src="<%= authUser.googleAvatar || '/avatar/' + authUser._id %>" onerror="this.src='/images/default-avatar.png'" alt="User Avatar">
+            <img src="<%= authUser.googleAvatar || '/avatar/' + authUser._id %>" loading="lazy" onerror="this.src='/images/default-avatar.png'" alt="User Avatar">
             <span>Signed in as <strong><%= authUser.name %></strong></span>
             <a href="/auth/logout" class="switch-link" title="Logout and choose another account">Not you?</a>
           </div>

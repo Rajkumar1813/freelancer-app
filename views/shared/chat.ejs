@@ -6,9 +6,10 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/chat.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
@@ -51,6 +52,7 @@
                   src="<%= avatar %>"
                   class="conv-avatar"
                   alt="<%= oUser ? oUser.name : 'User' %>"
+                  loading="lazy"
                   onerror="this.src='/images/default-avatar.png'">
                 <span class="conv-online-dot"></span>
               </div>
@@ -147,6 +149,7 @@
                 data-msg-id="<%= msg._id %>">
                 <% if (!isOwn) { %>
                   <img src="<%= senderAvatar %>" class="msg-avatar"
+                    loading="lazy"
                     onerror="this.src='/images/default-avatar.png'" alt="avatar">
                 <% } %>
                 <div class="message-bubble">
@@ -193,10 +196,10 @@
     const OTHER_USER_NAME   = '<%= otherUser ? otherUser.name.replace(/'/g, "\\'") : "" %>';
     const OTHER_USER_AVATAR = '<%= otherUser ? (otherUser.googleAvatar || "/avatar/"+otherUser._id) : "" %>';
   </script>
-  <script src="/js/main.js"></script>
-  <script src="/js/chat.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/chat.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
 
   <style>
     .chat-start-hint {

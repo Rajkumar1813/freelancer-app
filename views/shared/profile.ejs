@@ -5,11 +5,12 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
   <!-- Cropper.js CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
   <style>
     .avatar-wrapper-rel {
       position: relative;
@@ -274,11 +275,11 @@
     </div>
   </div>
 
-  <script src="/js/main.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
   <!-- Cropper.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" defer></script>
   <script>
     const USER_ID = '<%= currentUser._id %>';
     let cropper = null;

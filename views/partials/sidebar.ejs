@@ -4,6 +4,7 @@
   <div class="sidebar-user">
     <img src="<%= currentUser.googleAvatar || '/avatar/' + currentUser._id %>"
          alt="<%= currentUser.name %>" class="sidebar-avatar"
+         loading="lazy"
          onerror="this.src='/images/default-avatar.png'">
     <div style="min-width:0;flex:1;">
       <div class="sidebar-name"><%= currentUser.name.split(' ').slice(0,2).join(' ') %></div>

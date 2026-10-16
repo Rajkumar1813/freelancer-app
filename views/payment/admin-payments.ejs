@@ -5,9 +5,10 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
   <style>
     /* ── Summary cards ── */
     .sum-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
@@ -279,9 +280,9 @@
     </div>
   </div>
 
-  <script src="/js/main.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
   <script>
     const USER_ID = '<%= currentUser._id %>';
     let activePaymentId = null;

@@ -5,9 +5,10 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
@@ -32,7 +33,7 @@
           <div class="notif-page-body">
             <div class="notif-page-sender">
               <% if (n.sender) { %>
-                <img src="<%= n.sender.googleAvatar || '/avatar/'+n.sender._id %>" class="notif-sender-avatar" onerror="this.src='/images/default-avatar.png'">
+                <img src="<%= n.sender.googleAvatar || '/avatar/'+n.sender._id %>" class="notif-sender-avatar" loading="lazy" onerror="this.src='/images/default-avatar.png'">
                 <strong><%= n.sender.name %></strong>
               <% } else { %><strong>FreelanceHub</strong><% } %>
             </div>
@@ -53,9 +54,9 @@
       <%- include('../partials/pagination') %>
     </main>
   </div>
-  <script src="/js/main.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
   <script>
     const USER_ID = '<%= currentUser._id %>';
     async function markRead(id) {

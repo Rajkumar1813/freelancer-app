@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
   <style>
     .project-detail-layout {
       display: grid;
@@ -174,7 +175,7 @@
             <h3 style="font-size:1.05rem;font-weight:700;color:var(--text-primary);border-bottom:1px solid var(--border-light);padding-bottom:12px;">About the Client</h3>
             <div class="client-profile-header">
               <img src="<%= project.client?.googleAvatar || (project.client ? '/avatar/'+project.client._id : '/images/default-avatar.png') %>"
-                   class="client-avatar-lg" alt="<%= project.client?.name %>" onerror="this.src='/images/default-avatar.png'">
+                   class="client-avatar-lg" alt="<%= project.client?.name %>" loading="lazy" onerror="this.src='/images/default-avatar.png'">
               <div>
                 <strong style="color:var(--text-primary);font-size:1rem;"><%= project.client?.name || 'Verified Client' %></strong>
                 <% if (project.client?.company) { %>
@@ -245,8 +246,8 @@
   </script>
   <% } %>
 
-  <script src="/js/main.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
 </body>
 </html>

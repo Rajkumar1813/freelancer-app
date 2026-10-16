@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/auth.css">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     .admin-switch-link {
@@ -93,7 +94,7 @@
         <div class="auth-divider"><span>or continue with</span></div>
         <a href="/auth/google" class="btn btn-google btn-full">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-               alt="Google" width="20">
+               alt="Google" width="20" height="20" loading="lazy">
           Continue with Google
         </a>
 
@@ -104,7 +105,7 @@
     </div>
   </div>
 
-  <script src="/js/main.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/theme.js" defer></script>
 </body>
 </html>

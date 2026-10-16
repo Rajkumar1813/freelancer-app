@@ -5,9 +5,10 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body class="app-body">
   <%- include('../partials/navbar') %>
@@ -31,7 +32,7 @@
           <div class="proposal-header">
             <div class="proposer-info">
               <img src="<%= prop.freelancer.googleAvatar || '/avatar/' + prop.freelancer._id %>"
-                class="proposal-avatar" onerror="this.src='/images/default-avatar.png'">
+                class="proposal-avatar" loading="lazy" onerror="this.src='/images/default-avatar.png'">
               <div>
                 <h4><a href="/client/freelancer/<%= prop.freelancer._id %>"><%= prop.freelancer.name %></a></h4>
                 <div class="rating-row">
@@ -75,9 +76,9 @@
       </div>
     </main>
   </div>
-  <script src="/js/main.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/main.js" defer></script>
+  <script src="/js/notifications.js" defer></script>
+  <script src="/js/theme.js" defer></script>
   <script>const USER_ID = '<%= currentUser._id %>';</script>
 </body>
 </html>

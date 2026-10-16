@@ -25,6 +25,18 @@
   --sidebar-w: 240px;
   --transition: all 0.2s ease;
 }
+/* Optimize font loading & prevent FOIT (flash of invisible text) */
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-display: swap;
+  src: local('Font Awesome 6 Free');
+}
+@font-face {
+  font-family: 'Font Awesome 6 Brands';
+  font-display: swap;
+  src: local('Font Awesome 6 Brands');
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 15px; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text-primary); background: var(--bg-main); line-height: 1.6; }
