@@ -55,7 +55,7 @@ exports.getBrowseProjects = async (req, res) => {
     }
     if (search) query.$text = { $search: search };
 
-    const projects = await Project.find(query).populate('client', 'name rating').sort(sort).lean();
+    const projects = await Project.find(query).select('-attachments.data').populate('client', 'name rating').sort(sort).lean();
 
     // Mark which ones freelancer already applied to
     const myProposalProjectIds = (await Proposal.find({ freelancer: req.user._id }).distinct('project')).map(String);

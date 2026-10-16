@@ -83,11 +83,11 @@
               <td><%= new Date(p.createdAt).toLocaleDateString('en-IN') %></td>
               <td>
                 <% if (p.status === 'accepted' && p.project) { %>
-                  <button type="button" class="btn btn-sm btn-primary" onclick="openReportModal('<%= p.project._id %>', '<%= (p.project.title || '').replace(/'/g, '\\\'') %>')">
-                    <i class="fas fa-file-alt"></i> Report
-                  </button>
                   <button type="button" class="btn btn-sm btn-outline" onclick="openHistoryModal('<%= p.project._id %>', '<%= (p.project.title || '').replace(/'/g, '\\\'') %>')">
-                    <i class="fas fa-history"></i> History
+                    <i class="fas fa-file-alt"></i> View Reports
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="openReportModal('<%= p.project._id %>', '<%= (p.project.title || '').replace(/'/g, '\\\'') %>')">
+                    <i class="fas fa-plus"></i> Submit Report
                   </button>
                 <% } else if (p.status === 'pending') { %>
                   <form action="/freelancer/proposals/<%= p._id %>/cancel" method="POST" style="display:inline"

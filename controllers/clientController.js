@@ -84,7 +84,7 @@ exports.getMyProjects = async (req, res) => {
     const { status, sort = '-createdAt' } = req.query;
     let query = { client: req.user._id };
     if (status) query.status = status;
-    const projects = await Project.find(query).populate('hiredFreelancer', 'name').sort(sort).lean();
+    const projects = await Project.find(query).select('-attachments.data').populate('hiredFreelancer', 'name').sort(sort).lean();
 
     // Counts for tabs/pills
     const allUserProjects = await Project.find({ client: req.user._id }).select('status').lean();
@@ -232,7 +232,7 @@ exports.getFindFreelancers = async (req, res) => {
       { bio: { $regex: search, $options: 'i' } },
       { skills: { $in: [new RegExp(search, 'i')] } }
     ];
-    const freelancers = await User.find(query).sort(sort).lean();
+    const freelancers = await User.find(query).select('-avatar -password -rawPassword').sort(sort).lean();
     const allSkills = await User.distinct('skills', { role: 'freelancer' });
     res.render('client/find-freelancer', { title: 'Find Freelancers - FreelanceHub', freelancers, allSkills, filters: req.query });
   } catch (err) {

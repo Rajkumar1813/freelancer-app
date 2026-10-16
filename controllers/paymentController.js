@@ -344,7 +344,8 @@ exports.getAdminPayments = async (req, res) => {
       .populate('client',     'name email')
       .populate('freelancer', 'name email payoutMethod payoutDetails')
       .populate('releasedBy', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Aggregate stats
     const [agg] = await Payment.aggregate([{

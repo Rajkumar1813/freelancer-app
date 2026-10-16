@@ -90,8 +90,15 @@ router.get('/api/project/:projectId', isLoggedIn, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
+    if (isClient) {
+      await Report.updateMany(
+        { project: project._id, clientSeen: false },
+        { clientSeen: true }
+      );
+    }
+
     const reports = await Report.find({ project: project._id })
-      .populate('freelancer', 'name googleAvatar')
+      .populate('freelancer', 'name googleAvatar avatar')
       .sort({ createdAt: -1 })
       .lean();
 

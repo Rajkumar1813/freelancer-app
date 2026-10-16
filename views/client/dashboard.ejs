@@ -6,7 +6,8 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/js/chart.umd.min.js"></script>
+  <script>if (typeof Chart === 'undefined') { document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>'); }</script>
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
 </head>
@@ -109,9 +110,16 @@
               <td><%= p.proposalCount || 0 %></td>
               <td><%= new Date(p.createdAt).toLocaleDateString('en-IN') %></td>
               <td>
-                <a href="/client/my-projects/<%= p._id %>/proposals" class="btn btn-sm btn-outline">
-                  <i class="fas fa-users"></i> Proposals
-                </a>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <a href="/client/my-projects/<%= p._id %>/proposals" class="btn btn-sm btn-outline">
+                    <i class="fas fa-users"></i> Proposals
+                  </a>
+                  <% if (p.hiredFreelancer) { %>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="openReportPopup('<%= p._id %>', '<%= (p.title || '').replace(/'/g, '\\\'') %>')">
+                      <i class="fas fa-file-alt"></i> Reports
+                    </button>
+                  <% } %>
+                </div>
               </td>
             </tr>
             <% }) %>
@@ -121,6 +129,9 @@
       </div>
     </main>
   </div>
+
+  <%- include('../partials/report-modal') %>
+
   <script>
     const GRAPH_DATA = <%- JSON.stringify(graphData) %>;
     const USER_ID = '<%= currentUser._id %>';

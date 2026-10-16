@@ -50,7 +50,7 @@ exports.getUsers = async (req, res) => {
       { name: { $regex: search, $options: 'i' } },
       { email: { $regex: search, $options: 'i' } }
     ];
-    const users = await User.find(query).sort(sort).lean();
+    const users = await User.find(query).select('-avatar -password -rawPassword').sort(sort).lean();
     res.render('admin/users', { title: 'Manage Users - FreelanceHub', users, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load users');
@@ -79,7 +79,12 @@ exports.getProjects = async (req, res) => {
     if (status) query.status = status;
     if (category) query.category = category;
     if (search) query.$text = { $search: search };
-    const projects = await Project.find(query).populate('client', 'name email').populate('hiredFreelancer', 'name').sort(sort).lean();
+    const projects = await Project.find(query)
+      .select('-attachments.data')
+      .populate('client', 'name email')
+      .populate('hiredFreelancer', 'name')
+      .sort(sort)
+      .lean();
     const categories = await Project.distinct('category');
     res.render('admin/projects', { title: 'All Projects - FreelanceHub', projects, categories, filters: req.query });
   } catch (err) {

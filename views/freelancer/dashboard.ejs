@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/js/chart.umd.min.js"></script>
+  <script>if (typeof Chart === 'undefined') { document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>'); }</script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body class="app-body">
@@ -90,7 +91,7 @@
           </div>
         <% } else { %>
         <table class="data-table">
-          <thead><tr><th>Project</th><th>Your Bid</th><th>Delivery</th><th>Status</th><th>Applied</th></tr></thead>
+          <thead><tr><th>Project</th><th>Your Bid</th><th>Delivery</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
           <tbody>
             <% recentProposals.forEach(p => { %>
             <tr>
@@ -99,6 +100,15 @@
               <td><%= p.deliveryTime %> days</td>
               <td><span class="badge status-<%= p.status %>"><%= p.status %></span></td>
               <td><%= new Date(p.createdAt).toLocaleDateString('en-IN') %></td>
+              <td>
+                <% if (p.status === 'accepted' && p.project) { %>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="openReportPopup('<%= p.project._id %>', '<%= (p.project.title || '').replace(/'/g, '\\\'') %>')">
+                    <i class="fas fa-file-alt"></i> Reports
+                  </button>
+                <% } else { %>
+                  <span class="text-muted small">—</span>
+                <% } %>
+              </td>
             </tr>
             <% }) %>
           </tbody>
@@ -114,6 +124,8 @@
       <% } %>
     </main>
   </div>
+
+  <%- include('../partials/report-modal') %>
   <script>
     const GRAPH_DATA = <%- JSON.stringify(graphData) %>;
     const USER_ID = '<%= currentUser._id %>';

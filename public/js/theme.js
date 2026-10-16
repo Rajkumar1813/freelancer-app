@@ -66,40 +66,47 @@
   }
 
   // ── 7. Update Chart.js colors ────────────────────────────────────
+  var isUpdatingCharts = false;
   function updateCharts(theme) {
-    if (typeof Chart === 'undefined') return;
+    if (typeof Chart === 'undefined' || isUpdatingCharts) return;
+    isUpdatingCharts = true;
+    try {
+      var isDark    = theme === DARK;
+      var textColor = isDark ? '#94a3b8' : '#64748b';
+      var gridColor = isDark ? '#252540' : '#f1f5f9';
+      var bordColor = isDark ? '#2d2d4e' : '#e2e8f0';
 
-    var isDark    = theme === DARK;
-    var textColor = isDark ? '#94a3b8' : '#64748b';
-    var gridColor = isDark ? '#252540' : '#f1f5f9';
-    var bordColor = isDark ? '#2d2d4e' : '#e2e8f0';
+      Chart.defaults.color       = textColor;
+      Chart.defaults.borderColor = bordColor;
 
-    Chart.defaults.color       = textColor;
-    Chart.defaults.borderColor = bordColor;
+      // Update every existing chart instance
+      var instances = Chart.instances;
+      if (!instances) return;
 
-    // Update every existing chart instance
-    var instances = Chart.instances;
-    if (!instances) return;
+      // Chart.js v4 returns an object keyed by id
+      Object.keys(instances).forEach(function (key) {
+        var chart = instances[key];
+        if (!chart || !chart.options) return;
 
-    // Chart.js v4 returns an object keyed by id
-    Object.keys(instances).forEach(function (key) {
-      var chart = instances[key];
-      if (!chart || !chart.options) return;
+        var scales = chart.options.scales || {};
+        ['x', 'y'].forEach(function (axis) {
+          if (!scales[axis]) return;
+          if (scales[axis].ticks) scales[axis].ticks.color = textColor;
+          if (scales[axis].grid)  scales[axis].grid.color  = gridColor;
+        });
 
-      var scales = chart.options.scales || {};
-      ['x', 'y'].forEach(function (axis) {
-        if (!scales[axis]) return;
-        if (scales[axis].ticks) scales[axis].ticks.color = textColor;
-        if (scales[axis].grid)  scales[axis].grid.color  = gridColor;
+        if (chart.options.plugins && chart.options.plugins.legend) {
+          chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+          chart.options.plugins.legend.labels.color = textColor;
+        }
+
+        chart.update('none'); // redraw without animation
       });
-
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-
-      chart.update('none'); // redraw without animation
-    });
+    } catch (e) {
+      console.warn('[theme] updateCharts error:', e);
+    } finally {
+      isUpdatingCharts = false;
+    }
   }
 
   // ── 8. Attach button listener + watch OS changes ──────────────────
@@ -125,14 +132,10 @@
       });
     } catch (e) {}
 
-    // Patch Chart.js draw so future charts also get correct colors
+    // Initialize Chart defaults if Chart is already loaded
     if (typeof Chart !== 'undefined') {
-      var origDraw = Chart.prototype.draw;
-      Chart.prototype.draw = function () {
-        origDraw.apply(this, arguments);
-        var theme = document.documentElement.getAttribute('data-theme') || LIGHT;
-        updateCharts(theme);
-      };
+      var currentTheme = document.documentElement.getAttribute('data-theme') || initial;
+      updateCharts(currentTheme);
     }
   }
 
