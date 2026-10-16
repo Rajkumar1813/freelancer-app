@@ -1,10 +1,11 @@
 const Project = require('../models/Project');
 const Proposal = require('../models/Proposal');
 const User = require('../models/User');
+const { getPagination } = require('../utils/pagination');
 
 exports.getAllProjects = async (req, res) => {
   try {
-    const { status, category, search, sort = '-createdAt', minBudget, maxBudget } = req.query;
+    const { status, category, search, sort = '-createdAt', minBudget, maxBudget, page = 1 } = req.query;
     let query = {};
 
     // Role-based visibility
@@ -30,18 +31,27 @@ exports.getAllProjects = async (req, res) => {
       if (maxBudget) query.budget.$lte = Number(maxBudget);
     }
 
+    const [totalItems, categories] = await Promise.all([
+      Project.countDocuments(query),
+      Project.distinct('category')
+    ]);
+
+    const pagination = getPagination(page, 12, totalItems);
+
     const projects = await Project.find(query)
+      .select('-attachments.data')
       .populate('client', 'name rating company')
       .populate('hiredFreelancer', 'name')
       .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
       .lean();
-
-    const categories = await Project.distinct('category');
 
     res.render('shared/projects', {
       title: 'Projects - FreelanceHub',
       projects,
       categories,
+      pagination,
       filters: req.query
     });
   } catch (err) {
@@ -54,7 +64,8 @@ exports.getAllProjects = async (req, res) => {
 exports.getProjectDetail = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('client', 'name rating company googleAvatar avatar')
+      .select('-attachments.data')
+      .populate('client', 'name rating company googleAvatar')
       .populate('hiredFreelancer', 'name rating skills')
       .lean();
 

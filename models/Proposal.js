@@ -22,6 +22,9 @@ const proposalSchema = new mongoose.Schema({
 // One proposal per freelancer per project
 proposalSchema.index({ project: 1, freelancer: 1 }, { unique: true });
 proposalSchema.index({ freelancer: 1, status: 1 });
+proposalSchema.index({ freelancer: 1, createdAt: -1 });
 proposalSchema.index({ project: 1, status: 1 });
+proposalSchema.index({ project: 1, createdAt: -1 });
+proposalSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Proposal', proposalSchema);

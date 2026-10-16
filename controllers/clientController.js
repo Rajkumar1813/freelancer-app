@@ -5,18 +5,25 @@ const Notification = require('../models/Notification');
 const Conversation = require('../models/Conversation');
 const { getGraphData } = require('../utils/graphData');
 const { getIO } = require('../config/socket');
+const { getPagination } = require('../utils/pagination');
 
 exports.getDashboard = async (req, res) => {
   try {
+    const myProjectIds = await Project.find({ client: req.user._id }).distinct('_id');
     const [pendingProjects, inProgressProjects, completedProjects, totalProjects, totalProposals] = await Promise.all([
       Project.countDocuments({ client: req.user._id, status: 'open' }),
       Project.countDocuments({ client: req.user._id, status: 'in_progress' }),
       Project.countDocuments({ client: req.user._id, status: 'completed' }),
       Project.countDocuments({ client: req.user._id }),
-      Proposal.countDocuments({ project: { $in: await Project.find({ client: req.user._id }).distinct('_id') } })
+      Proposal.countDocuments({ project: { $in: myProjectIds } })
     ]);
 
-    const recentProjects = await Project.find({ client: req.user._id }).populate('hiredFreelancer', 'name').sort({ createdAt: -1 }).limit(5);
+    const recentProjects = await Project.find({ client: req.user._id })
+      .select('-attachments.data')
+      .populate('hiredFreelancer', 'name')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
     const graphData = await getGraphData('client', req.user._id);
     const spentResult = await Project.aggregate([
       { $match: { client: req.user._id, status: 'completed' } },
@@ -58,16 +65,27 @@ exports.postProject = async (req, res) => {
       client: req.user._id
     });
 
-    // Notify freelancers with matching skills
-    const matchingFreelancers = await User.find({ role: 'freelancer', skills: { $in: skillsArr }, isBanned: false });
-    const io = getIO();
-    for (const fl of matchingFreelancers) {
-      const notif = await Notification.create({
-        recipient: fl._id, sender: req.user._id, type: 'project_update',
-        message: `New project matching your skills: "${title}"`, link: '/projects'
-      });
-      const pop = await notif.populate('sender', 'name googleAvatar');
-      io.to(`user_${fl._id}`).emit('newNotification', pop);
+    // Notify freelancers with matching skills (batch insertMany - no N+1 loop)
+    const matchingFreelancers = await User.find({ role: 'freelancer', skills: { $in: skillsArr }, isBanned: false }).select('_id').lean();
+    if (matchingFreelancers.length > 0) {
+      const notifs = matchingFreelancers.map(fl => ({
+        recipient: fl._id,
+        sender: req.user._id,
+        type: 'project_update',
+        message: `New project matching your skills: "${title}"`,
+        link: '/projects'
+      }));
+      const createdNotifs = await Notification.insertMany(notifs);
+
+      const io = getIO();
+      if (io) {
+        const senderObj = { _id: req.user._id, name: req.user.name, googleAvatar: req.user.googleAvatar };
+        createdNotifs.forEach(notif => {
+          const payload = notif.toObject ? notif.toObject() : { ...notif };
+          payload.sender = senderObj;
+          io.to(`user_${notif.recipient}`).emit('newNotification', payload);
+        });
+      }
     }
 
     req.flash('success', 'Project posted successfully!');
@@ -81,13 +99,26 @@ exports.postProject = async (req, res) => {
 
 exports.getMyProjects = async (req, res) => {
   try {
-    const { status, sort = '-createdAt' } = req.query;
+    const { status, sort = '-createdAt', page = 1 } = req.query;
     let query = { client: req.user._id };
     if (status) query.status = status;
-    const projects = await Project.find(query).select('-attachments.data').populate('hiredFreelancer', 'name').sort(sort).lean();
+
+    const [totalItems, allUserProjects] = await Promise.all([
+      Project.countDocuments(query),
+      Project.find({ client: req.user._id }).select('status').lean()
+    ]);
+
+    const pagination = getPagination(page, 10, totalItems);
+
+    const projects = await Project.find(query)
+      .select('-attachments.data')
+      .populate('hiredFreelancer', 'name')
+      .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .lean();
 
     // Counts for tabs/pills
-    const allUserProjects = await Project.find({ client: req.user._id }).select('status').lean();
     const counts = {
       all: allUserProjects.length,
       open: allUserProjects.filter(p => p.status === 'open').length,
@@ -96,7 +127,7 @@ exports.getMyProjects = async (req, res) => {
       cancelled: allUserProjects.filter(p => p.status === 'cancelled').length
     };
 
-    res.render('client/my-projects', { title: 'My Projects - FreelanceHub', projects, counts, filters: req.query });
+    res.render('client/my-projects', { title: 'My Projects - FreelanceHub', projects, counts, pagination, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load projects');
     res.redirect('/client/dashboard');
@@ -105,19 +136,28 @@ exports.getMyProjects = async (req, res) => {
 
 exports.getAllProposals = async (req, res) => {
   try {
-    const { project: filterProjectId, status: filterStatus, sort = '-createdAt', search } = req.query;
+    const { project: filterProjectId, status: filterStatus, sort = '-createdAt', search, page = 1 } = req.query;
 
-    const myProjects = await Project.find({ client: req.user._id }).sort({ createdAt: -1 }).lean();
+    const myProjects = await Project.find({ client: req.user._id }).select('_id title budget status').sort({ createdAt: -1 }).lean();
     const myProjectIds = myProjects.map(p => p._id);
 
     let query = { project: { $in: myProjectIds } };
     if (filterProjectId) query.project = filterProjectId;
     if (filterStatus) query.status = filterStatus;
 
+    const [allProps, totalItems] = await Promise.all([
+      Proposal.find({ project: { $in: myProjectIds } }).select('status').lean(),
+      Proposal.countDocuments(query)
+    ]);
+
+    const pagination = getPagination(page, 10, totalItems);
+
     let proposals = await Proposal.find(query)
       .populate('project', 'title budget budgetType status proposalCount priority deadline')
       .populate('freelancer', 'name email skills rating reviewCount hourlyRate googleAvatar')
       .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
       .lean();
 
     if (search) {
@@ -130,8 +170,6 @@ exports.getAllProposals = async (req, res) => {
       );
     }
 
-    // Counts across all proposals for client
-    const allProps = await Proposal.find({ project: { $in: myProjectIds } }).select('status').lean();
     const stats = {
       total: allProps.length,
       pending: allProps.filter(p => p.status === 'pending').length,
@@ -144,6 +182,7 @@ exports.getAllProposals = async (req, res) => {
       proposals,
       projects: myProjects,
       stats,
+      pagination,
       filters: req.query
     });
   } catch (err) {
@@ -218,7 +257,7 @@ exports.acceptProposal = async (req, res) => {
 
 exports.getFindFreelancers = async (req, res) => {
   try {
-    const { skill, minRate, maxRate, availability, sort = '-rating', search } = req.query;
+    const { skill, minRate, maxRate, availability, sort = '-rating', search, page = 1 } = req.query;
     let query = { role: 'freelancer', isBanned: false, isVerified: true };
     if (skill) query.skills = { $in: [skill] };
     if (availability) query.availability = availability;
@@ -232,9 +271,28 @@ exports.getFindFreelancers = async (req, res) => {
       { bio: { $regex: search, $options: 'i' } },
       { skills: { $in: [new RegExp(search, 'i')] } }
     ];
-    const freelancers = await User.find(query).select('-avatar -password -rawPassword').sort(sort).lean();
-    const allSkills = await User.distinct('skills', { role: 'freelancer' });
-    res.render('client/find-freelancer', { title: 'Find Freelancers - FreelanceHub', freelancers, allSkills, filters: req.query });
+
+    const [totalItems, allSkills] = await Promise.all([
+      User.countDocuments(query),
+      User.distinct('skills', { role: 'freelancer' })
+    ]);
+
+    const pagination = getPagination(page, 12, totalItems);
+
+    const freelancers = await User.find(query)
+      .select('-avatar -avatarContentType -password -rawPassword')
+      .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .lean();
+
+    res.render('client/find-freelancer', {
+      title: 'Find Freelancers - FreelanceHub',
+      freelancers,
+      allSkills,
+      pagination,
+      filters: req.query
+    });
   } catch (err) {
     req.flash('error', 'Failed to load freelancers');
     res.redirect('/client/dashboard');
@@ -243,12 +301,19 @@ exports.getFindFreelancers = async (req, res) => {
 
 exports.getFreelancerProfile = async (req, res) => {
   try {
-    const freelancer = await User.findOne({ _id: req.params.id, role: 'freelancer' }).lean();
+    const freelancer = await User.findOne({ _id: req.params.id, role: 'freelancer' })
+      .select('-avatar -avatarContentType -password -rawPassword')
+      .lean();
     if (!freelancer) { req.flash('error', 'Freelancer not found'); return res.redirect('/client/find-freelancer'); }
-    const completedProjects = await Project.find({ hiredFreelancer: freelancer._id, status: 'completed' }).populate('client', 'name').sort({ completedAt: -1 }).limit(5).lean();
+    const completedProjects = await Project.find({ hiredFreelancer: freelancer._id, status: 'completed' })
+      .select('-attachments.data')
+      .populate('client', 'name')
+      .sort({ completedAt: -1 })
+      .limit(5)
+      .lean();
     
     // Check if conversation exists
-    const existingConv = await Conversation.findOne({ participants: { $all: [req.user._id, freelancer._id] } });
+    const existingConv = await Conversation.findOne({ participants: { $all: [req.user._id, freelancer._id] } }).lean();
     
     res.render('client/freelancer-profile', { title: `${freelancer.name} - FreelanceHub`, freelancer, completedProjects, existingConv });
   } catch (err) {

@@ -1,0 +1,62 @@
+<% if (typeof pagination !== 'undefined' && pagination && pagination.totalPages > 1) { %>
+  <div class="pagination-container" style="margin-top: 18px;">
+    <div class="pagination-info">
+      Showing <strong><%= ((pagination.page - 1) * pagination.limit) + 1 %></strong> to 
+      <strong><%= Math.min(pagination.page * pagination.limit, pagination.totalItems) %></strong> of 
+      <strong><%= pagination.totalItems %></strong> results
+    </div>
+    <div class="pagination-controls">
+      <% 
+        function buildPageUrl(p) {
+          const params = new URLSearchParams();
+          const currentFilters = typeof filters !== 'undefined' && filters ? { ...filters } : {};
+          for (const [key, val] of Object.entries(currentFilters)) {
+            if (val !== undefined && val !== null && val !== '' && key !== 'page') {
+              params.set(key, val);
+            }
+          }
+          params.set('page', p);
+          return '?' + params.toString();
+        }
+      %>
+      <% if (pagination.hasPrev) { %>
+        <a href="<%= buildPageUrl(pagination.prevPage) %>" class="pagination-btn" title="Previous page">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+      <% } else { %>
+        <button class="pagination-btn" disabled><i class="fas fa-chevron-left"></i></button>
+      <% } %>
+
+      <% 
+        const startPage = Math.max(1, pagination.page - 2);
+        const endPage = Math.min(pagination.totalPages, pagination.page + 2);
+      %>
+
+      <% if (startPage > 1) { %>
+        <a href="<%= buildPageUrl(1) %>" class="pagination-btn <%= pagination.page === 1 ? 'active' : '' %>">1</a>
+        <% if (startPage > 2) { %>
+          <span style="padding: 0 4px; color: var(--text-muted);">&hellip;</span>
+        <% } %>
+      <% } %>
+
+      <% for (let p = startPage; p <= endPage; p++) { %>
+        <a href="<%= buildPageUrl(p) %>" class="pagination-btn <%= pagination.page === p ? 'active' : '' %>"><%= p %></a>
+      <% } %>
+
+      <% if (endPage < pagination.totalPages) { %>
+        <% if (endPage < pagination.totalPages - 1) { %>
+          <span style="padding: 0 4px; color: var(--text-muted);">&hellip;</span>
+        <% } %>
+        <a href="<%= buildPageUrl(pagination.totalPages) %>" class="pagination-btn <%= pagination.page === pagination.totalPages ? 'active' : '' %>"><%= pagination.totalPages %></a>
+      <% } %>
+
+      <% if (pagination.hasNext) { %>
+        <a href="<%= buildPageUrl(pagination.nextPage) %>" class="pagination-btn" title="Next page">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      <% } else { %>
+        <button class="pagination-btn" disabled><i class="fas fa-chevron-right"></i></button>
+      <% } %>
+    </div>
+  </div>
+<% } %>

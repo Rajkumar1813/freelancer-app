@@ -6,6 +6,7 @@ const Report = require('../models/Report');
 const Conversation = require('../models/Conversation');
 const { getGraphData } = require('../utils/graphData');
 const { getIO } = require('../config/socket');
+const { getPagination } = require('../utils/pagination');
 
 exports.getDashboard = async (req, res) => {
   try {
@@ -19,7 +20,10 @@ exports.getDashboard = async (req, res) => {
     ]);
 
     const recentProposals = await Proposal.find({ freelancer: req.user._id })
-      .populate('project', 'title budget status').sort({ createdAt: -1 }).limit(5);
+      .populate('project', 'title budget status')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
     const graphData = await getGraphData('freelancer', req.user._id);
 
     res.render('freelancer/dashboard', {
@@ -44,7 +48,7 @@ exports.getDashboard = async (req, res) => {
 
 exports.getBrowseProjects = async (req, res) => {
   try {
-    const { skill, minBudget, maxBudget, category, sort = '-createdAt', search } = req.query;
+    const { skill, minBudget, maxBudget, category, sort = '-createdAt', search, page = 1 } = req.query;
     let query = { status: 'open', isPublic: true };
     if (skill) query.skills = { $in: [skill] };
     if (category) query.category = category;
@@ -55,21 +59,33 @@ exports.getBrowseProjects = async (req, res) => {
     }
     if (search) query.$text = { $search: search };
 
-    const projects = await Project.find(query).select('-attachments.data').populate('client', 'name rating').sort(sort).lean();
+    const [totalItems, categories, allSkills, myProposalProjectIdsRaw] = await Promise.all([
+      Project.countDocuments(query),
+      Project.distinct('category'),
+      User.distinct('skills', { role: 'freelancer' }),
+      Proposal.find({ freelancer: req.user._id }).distinct('project')
+    ]);
+
+    const pagination = getPagination(page, 12, totalItems);
+
+    const projects = await Project.find(query)
+      .select('-attachments.data')
+      .populate('client', 'name rating')
+      .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .lean();
 
     // Mark which ones freelancer already applied to
-    const myProposalProjectIds = (await Proposal.find({ freelancer: req.user._id }).distinct('project')).map(String);
+    const myProposalProjectIds = myProposalProjectIdsRaw.map(String);
     const projectsWithStatus = projects.map(p => ({
       ...p,
       alreadyApplied: myProposalProjectIds.includes(String(p._id))
     }));
-
-    const categories = await Project.distinct('category');
-    const allSkills = await User.distinct('skills', { role: 'freelancer' });
     
     res.render('freelancer/browse-projects', {
       title: 'Browse Projects - FreelanceHub',
-      projects: projectsWithStatus, categories, allSkills, filters: req.query
+      projects: projectsWithStatus, categories, allSkills, pagination, filters: req.query
     });
   } catch (err) {
     req.flash('error', 'Failed to load projects');
@@ -109,13 +125,25 @@ exports.submitProposal = async (req, res) => {
 
 exports.getMyProposals = async (req, res) => {
   try {
-    const { status, sort = '-createdAt' } = req.query;
+    const { status, sort = '-createdAt', page = 1 } = req.query;
     let query = { freelancer: req.user._id };
     if (status) query.status = status;
-    const proposals = await Proposal.find(query).populate('project', 'title budget status deadline client').sort(sort);
+
+    const [totalItems, allUserProps] = await Promise.all([
+      Proposal.countDocuments(query),
+      Proposal.find({ freelancer: req.user._id }).select('status').lean()
+    ]);
+
+    const pagination = getPagination(page, 10, totalItems);
+
+    const proposals = await Proposal.find(query)
+      .populate('project', 'title budget status deadline client')
+      .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .lean();
 
     // Proposal status counts for quick tabs
-    const allUserProps = await Proposal.find({ freelancer: req.user._id }).select('status').lean();
     const counts = {
       all: allUserProps.length,
       pending: allUserProps.filter(p => p.status === 'pending').length,
@@ -124,7 +152,7 @@ exports.getMyProposals = async (req, res) => {
       withdrawn: allUserProps.filter(p => p.status === 'withdrawn').length
     };
 
-    res.render('freelancer/my-proposals', { title: 'My Proposals - FreelanceHub', proposals, counts, filters: req.query });
+    res.render('freelancer/my-proposals', { title: 'My Proposals - FreelanceHub', proposals, counts, pagination, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load proposals');
     res.redirect('/freelancer/dashboard');

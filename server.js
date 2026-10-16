@@ -102,6 +102,8 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+const { getCachedUnreadNotifications, getCachedUnreadCount, getCachedUnverifiedCount } = require('./utils/cache');
+
 app.use(flash());
 
 // ── Global locals ─────────────────────────────────────────────────
@@ -112,9 +114,7 @@ app.use(async (req, res, next) => {
 
   if (req.user) {
     try {
-      res.locals.unreadNotifications = await Notification.countDocuments({
-        recipient: req.user._id, read: false
-      });
+      res.locals.unreadNotifications = await getCachedUnreadNotifications(req.user._id);
     } catch (e) { res.locals.unreadNotifications = 0; }
 
     if (req.user.role === 'admin') {
@@ -131,9 +131,7 @@ app.use(async (req, res, next) => {
       };
 
       try {
-        res.locals.unverifiedCount = await User.countDocuments({
-          isVerified: false, isBanned: false, role: { $ne: 'admin' }
-        });
+        res.locals.unverifiedCount = await getCachedUnverifiedCount();
       } catch (e) { res.locals.unverifiedCount = 0; }
     } else {
       res.locals.isSuperAdmin = false;

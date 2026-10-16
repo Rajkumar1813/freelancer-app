@@ -53,7 +53,9 @@ const paymentSchema = new mongoose.Schema({
 
 paymentSchema.index({ project:    1 });
 paymentSchema.index({ client:     1 });
-paymentSchema.index({ freelancer: 1 });
-paymentSchema.index({ status:     1 });
+paymentSchema.index({ freelancer: 1, status: 1 });
+paymentSchema.index({ freelancer: 1, createdAt: -1 });
+paymentSchema.index({ status:     1, createdAt: -1 });
+paymentSchema.index({ createdAt:  -1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

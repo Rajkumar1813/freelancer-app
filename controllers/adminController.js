@@ -4,6 +4,7 @@ const Proposal = require('../models/Proposal');
 const Notification = require('../models/Notification');
 const { getGraphData } = require('../utils/graphData');
 const { getIO } = require('../config/socket');
+const { getPagination } = require('../utils/pagination');
 
 exports.getDashboard = async (req, res) => {
   try {
@@ -15,8 +16,17 @@ exports.getDashboard = async (req, res) => {
       Project.countDocuments({ status: 'completed' }),
       User.countDocuments({ role: 'client' }),
       User.countDocuments({ role: 'freelancer' }),
-      User.find({ role: { $ne: 'admin' } }).sort({ createdAt: -1 }).limit(5),
-      Project.find().populate('client', 'name').sort({ createdAt: -1 }).limit(5)
+      User.find({ role: { $ne: 'admin' } })
+        .select('-avatar -avatarContentType -password -rawPassword')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+      Project.find()
+        .select('-attachments.data')
+        .populate('client', 'name')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean()
     ]);
 
     const completedRevenue = await Project.aggregate([
@@ -41,7 +51,7 @@ exports.getDashboard = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const { role, status, search, sort = '-createdAt' } = req.query;
+    const { role, status, search, sort = '-createdAt', page = 1 } = req.query;
     let query = { role: { $ne: 'admin' } };
     if (role) query.role = role;
     if (status === 'banned') query.isBanned = true;
@@ -50,8 +60,29 @@ exports.getUsers = async (req, res) => {
       { name: { $regex: search, $options: 'i' } },
       { email: { $regex: search, $options: 'i' } }
     ];
-    const users = await User.find(query).select('-avatar -password -rawPassword').sort(sort).lean();
-    res.render('admin/users', { title: 'Manage Users - FreelanceHub', users, filters: req.query });
+
+    const [totalItems, allUsersForStats] = await Promise.all([
+      User.countDocuments(query),
+      User.find({ role: { $ne: 'admin' } }).select('role isBanned').lean()
+    ]);
+
+    const pagination = getPagination(page, 15, totalItems);
+
+    const users = await User.find(query)
+      .select('-avatar -avatarContentType -password -rawPassword')
+      .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .lean();
+
+    const stats = {
+      totalUsers: allUsersForStats.length,
+      clientsCount: allUsersForStats.filter(u => u.role === 'client').length,
+      freelancersCount: allUsersForStats.filter(u => u.role === 'freelancer').length,
+      bannedCount: allUsersForStats.filter(u => u.isBanned).length
+    };
+
+    res.render('admin/users', { title: 'Manage Users - FreelanceHub', users, stats, pagination, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load users');
     res.redirect('/admin/dashboard');
@@ -74,19 +105,29 @@ exports.banUser = async (req, res) => {
 
 exports.getProjects = async (req, res) => {
   try {
-    const { status, category, search, sort = '-createdAt' } = req.query;
+    const { status, category, search, sort = '-createdAt', page = 1 } = req.query;
     let query = {};
     if (status) query.status = status;
     if (category) query.category = category;
     if (search) query.$text = { $search: search };
+
+    const [totalItems, categories] = await Promise.all([
+      Project.countDocuments(query),
+      Project.distinct('category')
+    ]);
+
+    const pagination = getPagination(page, 15, totalItems);
+
     const projects = await Project.find(query)
       .select('-attachments.data')
       .populate('client', 'name email')
       .populate('hiredFreelancer', 'name')
       .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit)
       .lean();
-    const categories = await Project.distinct('category');
-    res.render('admin/projects', { title: 'All Projects - FreelanceHub', projects, categories, filters: req.query });
+
+    res.render('admin/projects', { title: 'All Projects - FreelanceHub', projects, categories, pagination, filters: req.query });
   } catch (err) {
     req.flash('error', 'Failed to load projects');
     res.redirect('/admin/dashboard');

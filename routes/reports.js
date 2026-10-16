@@ -10,6 +10,7 @@ router.get('/project/:projectId', isLoggedIn, async (req, res) => {
   try {
     // ── FIX: correct populate syntax (separate fields, not one string) ──
     const project = await Project.findById(req.params.projectId)
+      .select('-attachments.data')
       .populate('client',          'name _id')
       .populate('hiredFreelancer', 'name _id');
 
@@ -41,8 +42,9 @@ router.get('/project/:projectId', isLoggedIn, async (req, res) => {
     }
 
     const reports = await Report.find(query)
-      .populate('freelancer', 'name googleAvatar avatar')
-      .sort(sort);
+      .populate('freelancer', 'name googleAvatar')
+      .sort(sort)
+      .lean();
 
     // ── Mark reports as seen if client is viewing ────────────────────────
     if (isClient) {
@@ -98,7 +100,7 @@ router.get('/api/project/:projectId', isLoggedIn, async (req, res) => {
     }
 
     const reports = await Report.find({ project: project._id })
-      .populate('freelancer', 'name googleAvatar avatar')
+      .populate('freelancer', 'name googleAvatar')
       .sort({ createdAt: -1 })
       .lean();
 

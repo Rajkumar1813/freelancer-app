@@ -5,15 +5,16 @@ const User = require('../models/User');
 exports.getConversations = async (req, res) => {
   try {
     const conversations = await Conversation.find({ participants: req.user._id })
-      .populate('participants', 'name googleAvatar avatar role')
+      .populate('participants', 'name googleAvatar role')
       .populate({ path: 'lastMessage', select: 'content createdAt sender' })
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 })
+      .lean();
 
     const convWithOther = conversations.map(conv => {
       const other = conv.participants.find(
         p => p._id.toString() !== req.user._id.toString()
       );
-      return { ...conv.toObject(), otherUser: other };
+      return { ...conv, otherUser: other };
     });
 
     res.render('shared/chat', {
@@ -34,39 +35,46 @@ exports.getConversations = async (req, res) => {
 exports.getConversation = async (req, res) => {
   try {
     // Get all conversations for sidebar
-    const conversations = await Conversation.find({ participants: req.user._id })
-      .populate('participants', 'name googleAvatar avatar role')
-      .populate({ path: 'lastMessage', select: 'content createdAt sender' })
-      .sort({ updatedAt: -1 });
-
-    const convWithOther = conversations.map(conv => {
-      const other = conv.participants.find(
-        p => p._id.toString() !== req.user._id.toString()
-      );
-      return { ...conv.toObject(), otherUser: other };
-    });
-
-    // Get the active conversation
-    const activeConversation = await Conversation.findOne({
-      _id: req.params.id,
-      participants: req.user._id
-    }).populate('participants', 'name googleAvatar avatar role');
+    const [conversations, activeConversation] = await Promise.all([
+      Conversation.find({ participants: req.user._id })
+        .populate('participants', 'name googleAvatar role')
+        .populate({ path: 'lastMessage', select: 'content createdAt sender' })
+        .sort({ updatedAt: -1 })
+        .lean(),
+      Conversation.findOne({
+        _id: req.params.id,
+        participants: req.user._id
+      })
+        .populate('participants', 'name googleAvatar role')
+        .lean()
+    ]);
 
     if (!activeConversation) {
       req.flash('error', 'Conversation not found');
       return res.redirect('/messages');
     }
 
-    // Get messages
-    const messages = await Message.find({ conversation: activeConversation._id })
-      .populate('sender', 'name googleAvatar avatar role')
-      .sort({ createdAt: 1 });
+    const convWithOther = conversations.map(conv => {
+      const other = conv.participants.find(
+        p => p._id.toString() !== req.user._id.toString()
+      );
+      return { ...conv, otherUser: other };
+    });
 
-    // Mark messages as read
-    await Message.updateMany(
+    // Get the most recent 50 messages
+    const recentMessages = await Message.find({ conversation: activeConversation._id })
+      .populate('sender', 'name googleAvatar role')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    const messages = recentMessages.reverse();
+
+    // Mark messages as read asynchronously without blocking render
+    Message.updateMany(
       { conversation: activeConversation._id, sender: { $ne: req.user._id }, read: false },
       { read: true }
-    );
+    ).catch(e => console.error('Error marking messages read:', e));
 
     // Get other user
     const otherUser = activeConversation.participants.find(

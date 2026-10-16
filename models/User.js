@@ -94,6 +94,10 @@ userSchema.virtual('avatarUrl').get(function () {
 });
 
 userSchema.index({ role: 1, isBanned: 1, isVerified: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ role: 1, rating: -1 });
+userSchema.index({ skills: 1, role: 1 });
+userSchema.index({ createdAt: -1 });
 
 userSchema.set('toJSON',   { virtuals: true });
 userSchema.set('toObject', { virtuals: true });

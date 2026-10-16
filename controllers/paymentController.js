@@ -16,6 +16,7 @@ const User         = require('../models/User');
 const Notification = require('../models/Notification');
 const { getIO }    = require('../config/socket');
 const rzpSvc       = require('../utils/razorpayService');
+const { getPagination } = require('../utils/pagination');
 
 const FEE_PCT = 10; // Platform commission %
 
@@ -247,7 +248,7 @@ exports.markProjectComplete = async (req, res) => {
       );
 
       // Notify admins
-      const admins = await User.find({ role: 'admin' });
+      const admins = await User.find({ role: 'admin' }).select('_id').lean();
       for (const admin of admins) {
         await pushNotif(
           admin._id, req.user._id, 'payment',
@@ -274,19 +275,42 @@ exports.markProjectComplete = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getFreelancerPayments = async (req, res) => {
   try {
-    const [payments, user] = await Promise.all([
-      Payment.find({ freelancer: req.user._id })
-        .populate('project', 'title status')
-        .populate('client',  'name')
-        .sort({ createdAt: -1 }),
-      User.findById(req.user._id)
+    const { page = 1 } = req.query;
+    const [totalItems, user, agg] = await Promise.all([
+      Payment.countDocuments({ freelancer: req.user._id }),
+      User.findById(req.user._id).select('payoutDetails').lean(),
+      Payment.aggregate([
+        { $match: { freelancer: req.user._id } },
+        {
+          $group: {
+            _id: null,
+            earned: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, '$freelancerAmount', 0] } },
+            inEscrow: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$freelancerAmount', 0] } },
+            inRelease: { $sum: { $cond: [{ $eq: ['$status', 'released'] }, '$freelancerAmount', 0] } }
+          }
+        }
+      ])
     ]);
+
+    const pagination = getPagination(page, 15, totalItems);
+
+    const payments = await Payment.find({ freelancer: req.user._id })
+      .populate('project', 'title status')
+      .populate('client',  'name')
+      .sort({ createdAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .lean();
+
+    const stats = agg[0] || { earned: 0, inEscrow: 0, inRelease: 0 };
 
     res.render('payment/freelancer-payments', {
       title:    'My Payments - FreelanceHub',
       payments,
       user,
-      hasPayoutSetup: !!user.payoutDetails?.method
+      stats,
+      pagination,
+      hasPayoutSetup: !!user?.payoutDetails?.method
     });
   } catch (err) {
     console.error('[getFreelancerPayments]', err);
@@ -336,8 +360,23 @@ exports.savePayoutDetails = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.getAdminPayments = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, page = 1 } = req.query;
     const query      = status ? { status } : {};
+
+    const [totalItems, agg] = await Promise.all([
+      Payment.countDocuments(query),
+      Payment.aggregate([{
+        $group: {
+          _id:             null,
+          totalCollected:  { $sum: { $cond: [{ $in: ['$status', ['paid','released','completed']] }, '$totalAmount',      0] } },
+          totalFees:       { $sum: { $cond: [{ $in: ['$status', ['paid','released','completed']] }, '$platformFee',      0] } },
+          totalPaid:       { $sum: { $cond: [{ $eq:  ['$status', 'completed']                   }, '$freelancerAmount', 0] } },
+          pendingPayout:   { $sum: { $cond: [{ $eq:  ['$status', 'paid']                        }, '$freelancerAmount', 0] } }
+        }
+      }])
+    ]);
+
+    const pagination = getPagination(page, 15, totalItems);
 
     const payments = await Payment.find(query)
       .populate('project',    'title status')
@@ -345,25 +384,17 @@ exports.getAdminPayments = async (req, res) => {
       .populate('freelancer', 'name email payoutMethod payoutDetails')
       .populate('releasedBy', 'name')
       .sort({ createdAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
       .lean();
 
-    // Aggregate stats
-    const [agg] = await Payment.aggregate([{
-      $group: {
-        _id:             null,
-        totalCollected:  { $sum: { $cond: [{ $in: ['$status', ['paid','released','completed']] }, '$totalAmount',      0] } },
-        totalFees:       { $sum: { $cond: [{ $in: ['$status', ['paid','released','completed']] }, '$platformFee',      0] } },
-        totalPaid:       { $sum: { $cond: [{ $eq:  ['$status', 'completed']                   }, '$freelancerAmount', 0] } },
-        pendingPayout:   { $sum: { $cond: [{ $eq:  ['$status', 'paid']                        }, '$freelancerAmount', 0] } }
-      }
-    }]);
-
-    const summary = agg || { totalCollected:0, totalFees:0, totalPaid:0, pendingPayout:0 };
+    const summary = agg[0] || { totalCollected:0, totalFees:0, totalPaid:0, pendingPayout:0 };
 
     res.render('payment/admin-payments', {
       title:   'Payment Management - FreelanceHub',
       payments,
       summary,
+      pagination,
       filters: req.query
     });
   } catch (err) {

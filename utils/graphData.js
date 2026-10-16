@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Project = require('../models/Project');
 const User = require('../models/User');
 const Proposal = require('../models/Proposal');
@@ -5,106 +6,170 @@ const Payment = require('../models/Payment');
 
 const getGraphData = async (role, userId) => {
   const now = new Date();
-  const months = [];
+  const monthKeys = [];
   const labels = [];
-  
+
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(d);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    monthKeys.push(`${yyyy}-${mm}`);
     labels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
   }
 
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
   if (role === 'admin') {
-    const projectData = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      return Project.countDocuments({ createdAt: { $gte: start, $lte: end } });
-    }));
+    const [projectRes, revenueRes, userRes] = await Promise.all([
+      Project.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+      ]),
+      Project.aggregate([
+        {
+          $match: {
+            status: 'completed',
+            $or: [
+              { completedAt: { $gte: startDate, $lte: endDate } },
+              { updatedAt: { $gte: startDate, $lte: endDate } }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m',
+                date: { $ifNull: ['$completedAt', '$updatedAt'] }
+              }
+            },
+            total: { $sum: { $ifNull: ['$amountPaid', { $ifNull: ['$budget', 0] }] } }
+          }
+        }
+      ]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+      ])
+    ]);
 
-    const revenueData = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      const projects = await Project.find({ 
-        status: 'completed', 
-        $or: [
-          { completedAt: { $gte: start, $lte: end } },
-          { updatedAt: { $gte: start, $lte: end } }
-        ]
-      }).select('amountPaid budget').lean();
-      return projects.reduce((sum, p) => sum + (p.amountPaid || p.budget || 0), 0);
-    }));
+    const projectMap = Object.fromEntries(projectRes.map(r => [r._id, r.count]));
+    const revenueMap = Object.fromEntries(revenueRes.map(r => [r._id, r.total]));
+    const userMap = Object.fromEntries(userRes.map(r => [r._id, r.count]));
 
-    const userGrowth = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      return User.countDocuments({ createdAt: { $gte: start, $lte: end } });
-    }));
+    const projectData = monthKeys.map(k => projectMap[k] || 0);
+    const revenueData = monthKeys.map(k => revenueMap[k] || 0);
+    const userGrowth = monthKeys.map(k => userMap[k] || 0);
 
     return { labels, projectData, revenueData, userGrowth, role: 'admin' };
 
   } else if (role === 'client') {
-    const projectData = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      return Project.countDocuments({ client: userId, createdAt: { $gte: start, $lte: end } });
-    }));
+    const clientObjId = new mongoose.Types.ObjectId(userId);
 
-    const spentData = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      const projects = await Project.find({ 
-        client: userId, 
-        status: 'completed',
-        $or: [
-          { completedAt: { $gte: start, $lte: end } },
-          { updatedAt: { $gte: start, $lte: end } }
-        ]
-      }).select('amountPaid budget').lean();
-      return projects.reduce((sum, p) => sum + (p.amountPaid || p.budget || 0), 0);
-    }));
+    const [projectRes, spentRes] = await Promise.all([
+      Project.aggregate([
+        { $match: { client: clientObjId, createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+      ]),
+      Project.aggregate([
+        {
+          $match: {
+            client: clientObjId,
+            status: 'completed',
+            $or: [
+              { completedAt: { $gte: startDate, $lte: endDate } },
+              { updatedAt: { $gte: startDate, $lte: endDate } }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m',
+                date: { $ifNull: ['$completedAt', '$updatedAt'] }
+              }
+            },
+            total: { $sum: { $ifNull: ['$amountPaid', { $ifNull: ['$budget', 0] }] } }
+          }
+        }
+      ])
+    ]);
 
-    return { labels, projectData, revenueData: spentData, role: 'client' };
+    const projectMap = Object.fromEntries(projectRes.map(r => [r._id, r.count]));
+    const spentMap = Object.fromEntries(spentRes.map(r => [r._id, r.total]));
+
+    const projectData = monthKeys.map(k => projectMap[k] || 0);
+    const revenueData = monthKeys.map(k => spentMap[k] || 0);
+
+    return { labels, projectData, revenueData, role: 'client' };
 
   } else if (role === 'freelancer') {
-    const earningsData = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      
-      const projects = await Project.find({ 
-        hiredFreelancer: userId, 
-        status: 'completed',
-        $or: [
-          { completedAt: { $gte: start, $lte: end } },
-          { updatedAt: { $gte: start, $lte: end } }
-        ]
-      }).select('amountPaid budget').lean();
+    const flObjId = new mongoose.Types.ObjectId(userId);
 
-      let total = projects.reduce((sum, p) => sum + (p.amountPaid || p.budget || 0), 0);
-      
-      // If projects amount is zero, fallback to completed/released Payments
-      if (total === 0) {
-        const payments = await Payment.find({
-          freelancer: userId,
-          status: { $in: ['released', 'completed', 'paid'] },
-          createdAt: { $gte: start, $lte: end }
-        }).select('freelancerAmount totalAmount').lean();
-        total = payments.reduce((sum, pay) => sum + (pay.freelancerAmount || pay.totalAmount || 0), 0);
-      }
+    const [propRes, earningsRes, paymentRes] = await Promise.all([
+      Proposal.aggregate([
+        {
+          $match: {
+            freelancer: flObjId,
+            status: 'accepted',
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+      ]),
+      Project.aggregate([
+        {
+          $match: {
+            hiredFreelancer: flObjId,
+            status: 'completed',
+            $or: [
+              { completedAt: { $gte: startDate, $lte: endDate } },
+              { updatedAt: { $gte: startDate, $lte: endDate } }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m',
+                date: { $ifNull: ['$completedAt', '$updatedAt'] }
+              }
+            },
+            total: { $sum: { $ifNull: ['$amountPaid', { $ifNull: ['$budget', 0] }] } }
+          }
+        }
+      ]),
+      Payment.aggregate([
+        {
+          $match: {
+            freelancer: flObjId,
+            status: { $in: ['released', 'completed', 'paid'] },
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+            total: { $sum: { $ifNull: ['$freelancerAmount', { $ifNull: ['$totalAmount', 0] }] } }
+          }
+        }
+      ])
+    ]);
 
-      return total;
-    }));
+    const propMap = Object.fromEntries(propRes.map(r => [r._id, r.count]));
+    const earnMap = Object.fromEntries(earningsRes.map(r => [r._id, r.total]));
+    const payMap = Object.fromEntries(paymentRes.map(r => [r._id, r.total]));
 
-    const projectData = await Promise.all(months.map(async (m) => {
-      const start = new Date(m.getFullYear(), m.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-      return Proposal.countDocuments({ 
-        freelancer: userId, 
-        status: 'accepted',
-        createdAt: { $gte: start, $lte: end }
-      });
-    }));
+    const projectData = monthKeys.map(k => propMap[k] || 0);
+    const revenueData = monthKeys.map(k => {
+      const pEarn = earnMap[k] || 0;
+      return pEarn > 0 ? pEarn : (payMap[k] || 0);
+    });
 
-    return { labels, projectData, revenueData: earningsData, role: 'freelancer' };
+    return { labels, projectData, revenueData, role: 'freelancer' };
   }
 };
 

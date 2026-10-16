@@ -22,7 +22,8 @@ router.get('/', isLoggedIn, (req, res) => {
 router.get('/:id', isLoggedIn, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('client', 'name rating company googleAvatar avatar')
+      .select('-attachments.data')
+      .populate('client', 'name rating company googleAvatar')
       .populate('hiredFreelancer', 'name rating skills')
       .lean();
 

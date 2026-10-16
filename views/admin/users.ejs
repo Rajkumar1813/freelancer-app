@@ -505,7 +505,7 @@
               <i class="fas fa-users"></i>
             </div>
             <div class="user-stat-info">
-              <div class="user-stat-value"><%= users.length %></div>
+              <div class="user-stat-value"><%= (typeof stats !== 'undefined' && stats) ? stats.totalUsers : users.length %></div>
               <div class="user-stat-label">Total Users</div>
             </div>
           </div>
@@ -514,7 +514,7 @@
               <i class="fas fa-user-tie"></i>
             </div>
             <div class="user-stat-info">
-              <div class="user-stat-value"><%= users.filter(u => u.role === 'client').length %></div>
+              <div class="user-stat-value"><%= (typeof stats !== 'undefined' && stats) ? stats.clientsCount : users.filter(u => u.role === 'client').length %></div>
               <div class="user-stat-label">Clients</div>
             </div>
           </div>
@@ -523,7 +523,7 @@
               <i class="fas fa-laptop-code"></i>
             </div>
             <div class="user-stat-info">
-              <div class="user-stat-value"><%= users.filter(u => u.role === 'freelancer').length %></div>
+              <div class="user-stat-value"><%= (typeof stats !== 'undefined' && stats) ? stats.freelancersCount : users.filter(u => u.role === 'freelancer').length %></div>
               <div class="user-stat-label">Freelancers</div>
             </div>
           </div>
@@ -532,7 +532,7 @@
               <i class="fas fa-user-slash"></i>
             </div>
             <div class="user-stat-info">
-              <div class="user-stat-value"><%= users.filter(u => u.isBanned).length %></div>
+              <div class="user-stat-value"><%= (typeof stats !== 'undefined' && stats) ? stats.bannedCount : users.filter(u => u.isBanned).length %></div>
               <div class="user-stat-label">Banned Users</div>
             </div>
           </div>
@@ -813,6 +813,7 @@
           <% }) %>
         </div>
 
+        <%- include('../partials/pagination') %>
       </div>
     </main>
   </div>

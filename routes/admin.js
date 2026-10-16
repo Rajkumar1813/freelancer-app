@@ -46,7 +46,10 @@ router.get('/unverified-users', requirePermission('manageUnverified'), async (re
 
     const raw = await User.find({
       isVerified: false, isBanned: false, role: { $ne: 'admin' }
-    }).sort({ createdAt: 1 }).lean();
+    })
+      .select('-avatar -avatarContentType -password -rawPassword')
+      .sort({ createdAt: 1 })
+      .lean();
 
     const users = raw.map(u => {
       const ageHrs    = Math.floor((now - new Date(u.createdAt)) / 3600000);

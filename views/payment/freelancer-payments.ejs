@@ -105,9 +105,10 @@
 
       <!-- ── Summary stats ── -->
       <%
-        const totalEarned   = payments.filter(p=>p.status==='completed').reduce((s,p)=>s+p.freelancerAmount,0);
-        const inEscrow      = payments.filter(p=>p.status==='paid').reduce((s,p)=>s+p.freelancerAmount,0);
-        const inRelease     = payments.filter(p=>p.status==='released').reduce((s,p)=>s+p.freelancerAmount,0);
+        const totalEarned   = (typeof stats !== 'undefined' && stats) ? (stats.earned || 0) : payments.filter(p=>p.status==='completed').reduce((s,p)=>s+p.freelancerAmount,0);
+        const inEscrow      = (typeof stats !== 'undefined' && stats) ? (stats.inEscrow || 0) : payments.filter(p=>p.status==='paid').reduce((s,p)=>s+p.freelancerAmount,0);
+        const inRelease     = (typeof stats !== 'undefined' && stats) ? (stats.inRelease || 0) : payments.filter(p=>p.status==='released').reduce((s,p)=>s+p.freelancerAmount,0);
+        const totalPayments = (typeof pagination !== 'undefined' && pagination) ? pagination.totalItems : payments.length;
       %>
       <div class="sum-grid">
         <div class="sum-card">
@@ -127,7 +128,7 @@
         </div>
         <div class="sum-card">
           <i class="fas fa-file-invoice-dollar"></i>
-          <div class="v"><%= payments.length %></div>
+          <div class="v"><%= totalPayments %></div>
           <div class="l">Total Payments</div>
         </div>
       </div>
@@ -179,6 +180,8 @@
         </div>
       </div>
       <% }) %>
+
+      <%- include('../partials/pagination') %>
 
       <!-- ── Payout Details Form ── -->
       <div id="payoutForm" style="scroll-margin-top:80px">

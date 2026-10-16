@@ -42,9 +42,10 @@ const initSocket = (server) => {
           updatedAt: new Date()
         });
 
-        // Populate sender info
+        // Populate sender info (no raw avatar Buffer over websocket)
         const populatedMsg = await Message.findById(message._id)
-          .populate('sender', 'name googleAvatar avatar role');
+          .populate('sender', 'name googleAvatar role')
+          .lean();
 
         // Emit to ALL in conversation room (both sender + receiver)
         io.to(`conv_${conversationId}`).emit('newMessage', populatedMsg);
