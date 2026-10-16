@@ -12,6 +12,8 @@ const userSchema = new mongoose.Schema({
   avatar: { type: Buffer },
   avatarContentType: { type: String },
   googleAvatar: { type: String },
+  avatarUrl: { type: String },
+  avatarPublicId: { type: String },
 
   // Google OAuth
   googleId: { type: String },
@@ -87,7 +89,8 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-userSchema.virtual('avatarUrl').get(function () {
+userSchema.virtual('displayAvatar').get(function () {
+  if (this.avatarUrl) return this.avatarUrl;
   if (this.googleAvatar) return this.googleAvatar;
   if (this.avatar) return `/avatar/${this._id}`;
   return '/images/default-avatar.png';

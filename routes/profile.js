@@ -32,6 +32,8 @@ router.get('/:id', isLoggedIn, async (req, res) => {
   }
 });
 
+const { isConfigured: isCloudinaryConfigured, uploadAvatarStream, deleteResource } = require('../utils/cloudinary');
+
 // ── Avatar Upload & Crop Endpoint (Any User: Client, Freelancer, Admin) ────────
 router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => {
   try {
@@ -66,15 +68,37 @@ router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => 
       return res.redirect('/profile');
     }
 
-    user.avatar = buffer;
-    user.avatarContentType = mimetype;
-    user.googleAvatar = null; // Clear Google avatar so the custom cropped avatar takes precedence
-    await user.save();
+    let finalAvatarUrl = null;
 
-    const newAvatarUrl = `/avatar/${user._id}?t=${Date.now()}`;
+    if (isCloudinaryConfigured()) {
+      // ── Cloudinary Stream Upload ──────────────────────────────────
+      const result = await uploadAvatarStream(buffer, user._id);
+
+      // Clean up previous Cloudinary avatar if present
+      if (user.avatarPublicId && user.avatarPublicId !== result.public_id) {
+        deleteResource(user.avatarPublicId).catch(() => {});
+      }
+
+      user.avatarUrl = result.secure_url;
+      user.avatarPublicId = result.public_id;
+      user.avatar = undefined;
+      user.avatarContentType = undefined;
+      user.googleAvatar = null;
+      await user.save();
+
+      finalAvatarUrl = user.avatarUrl;
+    } else {
+      // ── Fallback (local dev without Cloudinary credentials) ────────
+      user.avatar = buffer;
+      user.avatarContentType = mimetype;
+      user.googleAvatar = null;
+      await user.save();
+
+      finalAvatarUrl = `/avatar/${user._id}?t=${Date.now()}`;
+    }
 
     if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.json({ success: true, avatarUrl: newAvatarUrl, message: 'Profile photo updated successfully!' });
+      return res.json({ success: true, avatarUrl: finalAvatarUrl, message: 'Profile photo updated successfully!' });
     }
 
     req.flash('success', 'Profile photo updated successfully!');
@@ -82,7 +106,7 @@ router.post('/avatar', isLoggedIn, upload.single('avatar'), async (req, res) => 
   } catch (err) {
     console.error('[postAvatar]', err);
     if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.status(500).json({ success: false, message: 'Failed to update avatar' });
+      return res.status(500).json({ success: false, message: 'Failed to update avatar: ' + err.message });
     }
     req.flash('error', 'Failed to update avatar');
     return res.redirect('/profile');

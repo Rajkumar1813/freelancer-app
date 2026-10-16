@@ -172,14 +172,19 @@ app.get('/', (req, res) => {
   res.render('auth/login', { title: 'Welcome - FreelanceHub' });
 });
 
-// ── Avatar ────────────────────────────────────────────────────────
+// ── Avatar (Backward compatible: Cloudinary URL redirect or legacy Buffer) ───
 app.get('/avatar/:userId', async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select('avatar avatarContentType');
-    if (user && user.avatar) {
-      res.set('Content-Type', user.avatarContentType || 'image/jpeg');
-      res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
-      return res.send(user.avatar);
+    const user = await User.findById(req.params.userId).select('avatar avatarContentType avatarUrl').lean();
+    if (user) {
+      if (user.avatarUrl && typeof user.avatarUrl === 'string' && user.avatarUrl.startsWith('http')) {
+        return res.redirect(user.avatarUrl);
+      }
+      if (user.avatar) {
+        res.set('Content-Type', user.avatarContentType || 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        return res.send(user.avatar);
+      }
     }
     res.redirect('/images/default-avatar.png');
   } catch (e) { res.redirect('/images/default-avatar.png'); }

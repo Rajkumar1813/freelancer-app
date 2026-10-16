@@ -28,11 +28,14 @@ const projectSchema = new mongoose.Schema({
   // Deadline
   deadline: { type: Date },
   
-  // Attachments (stored as buffers in MongoDB)
+  // Attachments (stored in Cloudinary; data buffer kept for backwards compatibility)
   attachments: [{
     filename: String,
-    data: Buffer,
-    contentType: String
+    url: String,
+    publicId: String,
+    contentType: String,
+    size: Number,
+    data: Buffer
   }],
   
   // Visibility
