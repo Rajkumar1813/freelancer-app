@@ -7,6 +7,8 @@ const passport       = require('passport');
 const flash          = require('connect-flash');
 const methodOverride = require('method-override');
 const dns            = require('dns');
+const helmet         = require('helmet');
+const rateLimit      = require('express-rate-limit');
 
 const connectDB      = require('./config/db');
 const { initSocket } = require('./config/socket');
@@ -31,6 +33,15 @@ dns.setServers(['1.1.1.1', '8.8.8.8']);
 const app    = express();
 const server = http.createServer(app);
 
+// ── Fast Health Check for Render / Cloud monitors (zero overhead) ──
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
+
+// ── Security Headers via Helmet (relaxed for CDNs, fonts, Razorpay) ─
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
 // ── Compression (Gzip/Brotli) to speed up all responses ─────────────
 app.use(compression());
 
@@ -43,13 +54,38 @@ initSocket(server);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// ── Static assets with 7-day browser cache & ETag ──────────────────
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '7d',
+  etag: true,
+  lastModified: true
+}));
+
+// ── Rate Limiters (DDoS & Brute Force Protection) ─────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 30, // 30 attempts per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/healthz' || req.path.startsWith('/avatar/') || req.path.startsWith('/payments/webhook')
+});
+
+app.use('/auth/login', authLimiter);
+app.use('/auth/register', authLimiter);
+app.use(generalLimiter);
+
 app.use('/payments/webhook', express.raw({ type: '*/*' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(methodOverride('_method'));
-app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: '1d'
-}));
 
 // ── Session store — connect-mongo v3/v4 BOTH handle karta hai ─────
 function buildStore() {

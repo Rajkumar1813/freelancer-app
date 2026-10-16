@@ -140,6 +140,12 @@ function initCharts(data) {
 function updateChartsData(data) {
   if (!data || !data.labels) return;
 
+  // If charts haven't been created yet (e.g. initial GRAPH_DATA wasn't ready), initialize them now
+  if (!projectChart && !revenueChart && !userChart) {
+    initCharts(data);
+    return;
+  }
+
   if (projectChart && data.projectData) {
     projectChart.data.labels = data.labels;
     projectChart.data.datasets[0].data = data.projectData;
@@ -172,7 +178,7 @@ function startCharts() {
     initCharts(GRAPH_DATA);
   }
 
-  // Auto-refresh periodically via API
+  // Auto-refresh periodically via API (120 seconds to prevent unnecessary server churn)
   if (typeof GRAPH_API_URL !== 'undefined' && GRAPH_API_URL && !graphRefreshInterval) {
     graphRefreshInterval = setInterval(async () => {
       try {
@@ -182,7 +188,7 @@ function startCharts() {
           updateChartsData(json.data);
         }
       } catch (e) {}
-    }, 25000);
+    }, 120000);
   }
 }
 
